@@ -1,250 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { FormProvider } from '../features/iniciativas/context/FormContext';
+import Step1Persona from '../features/iniciativas/components/steps/persona/Step1';
+import Step2Persona from '../features/iniciativas/components/steps/persona/Step2';
+import Step1Entidad from '../features/iniciativas/components/steps/entidad/Step1';
+import Step1Organizacion from '../features/iniciativas/components/steps/organizacion/Step1';
+import { useFormContext } from '../features/iniciativas/context/FormContext';
 
-// Tipos de remitente
-type TipoRemitente = 'persona' | 'entidad' | 'organizacion';
+// Componente interno que maneja la lógica de renderizado de pasos
+const FormularioContenido: React.FC = () => {
+  const { formData, updateFormData } = useFormContext();
 
-// Interface para el estado del formulario
-interface FormData {
-  tipoRemitente: TipoRemitente;
-  nombres: string;
-  primerApellido: string;
-  segundoApellido: string;
-  nombreEntidad?: string;
-  razonSocial?: string;
-  nombreOrganizacion?: string;
-  razonOrganizacion?:string;
-  tipoDocumento: string;
-  numeroDocumento: string;
-  email: string;
-  numeroContacto: string;
-  paso: number;
-}
-
-const FormularioIniciativas: React.FC = () => {
-  // Clase base para inputs
-  const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
-  
-  // Clase base para labels
-  const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
-  // Estado inicial del formulario
-  const [formData, setFormData] = useState<FormData>({
-    tipoRemitente: 'persona',
-    nombres: '',
-    primerApellido: '',
-    segundoApellido: '',
-    nombreEntidad: '',
-    nombreOrganizacion: '',    
-    razonSocial: '',
-    razonOrganizacion: '',
-    tipoDocumento: 'CC',
-    numeroDocumento: '',
-    email: '',
-    numeroContacto: '',
-    paso: 1,
-  });
-
-  // Manejador de cambios en los campos
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Manejador para el cambio de tipo de remitente
+  const handleTipoRemitenteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateFormData({
+      tipoRemitente: e.target.value as 'persona' | 'entidad' | 'organizacion',
+      paso: 1
+    });
   };
 
-  // Manejador de cambio de paso
-  const handleNext = () => {
-    setFormData(prev => ({
-      ...prev,
-      paso: prev.paso + 1
-    }));
-  };
-
-  // Renderizado condicional de campos según tipo de remitente
-  const renderCamposSegunTipo = () => {
+  // Renderizado del paso actual según el tipo de remitente
+  const renderPasoActual = () => {
     switch (formData.tipoRemitente) {
       case 'persona':
-        return (
-          <>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="nombres">
-                Nombre (s)
-              </label>
-              <input
-                type="text"
-                id="nombres"
-                name="nombres"
-                value={formData.nombres}
-                onChange={handleChange}
-                className={inputBaseClass}               
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="primerApellido">
-                Primer apellido
-              </label>
-              <input
-                type="text"
-                id="primerApellido"
-                name="primerApellido"
-                value={formData.primerApellido}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-pink-500"                
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="segundoApellido">
-                Segundo apellido
-              </label>
-              <input
-                type="text"
-                id="segundoApellido"
-                name="segundoApellido"
-                value={formData.segundoApellido}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-pink-500"                
-              />
-            </div>
-            <div className="mb-4">
-                <label className= {labelBaseClass} htmlFor="numeroDocumento">
-                Número de documento
-                </label>
-            <div className="flex gap-2">
-            <select
-              className={`w-16 text-gray-700 font-medium`}
-              name="tipoDocumento"
-              value={formData.tipoDocumento}
-              onChange={handleChange}
-            >
-              <option value="CC">CC.</option>
-              <option value="CE">CE.</option>
-              <option value="TI">TI.</option>
-            </select>
-            <input
-              type="text"
-              id="numeroDocumento"
-              name="numeroDocumento"
-              value={formData.numeroDocumento}
-              onChange={handleChange}
-              className={`flex-1 ${inputBaseClass}`}              
-            />
-          </div>
-        </div>        
-          </>
-        );
-
-        case 'entidad':
-        return (
-          <>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="nombreEntidad">
-                Nombre de la entidad
-              </label>
-              <input
-                type="text"
-                id="nombreEntidad"
-                name="nombreEntidad"
-                value={formData.nombreEntidad}
-                onChange={handleChange}
-                className={inputBaseClass}
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="razonSocial">
-                Razón social de la entidad
-              </label>
-              <input
-                type="text"
-                id="razonSocial"
-                name="razonSocial"
-                value={formData.razonSocial}
-                onChange={handleChange}
-                className={inputBaseClass}
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="numeroDocumento">
-                Número de documento
-              </label>
-              <div className="flex gap-2">
-                <select
-                  className={`w-24 text-gray-700 font-medium ${inputBaseClass}`}
-                  name="tipoDocumento"
-                  value={formData.tipoDocumento}
-                  onChange={handleChange}
-                >
-                  <option value="NIT">NIT</option>
-                </select>
-                <input
-                  type="text"
-                  id="numeroDocumento"
-                  name="numeroDocumento"
-                  value={formData.numeroDocumento}
-                  onChange={handleChange}
-                  className={`flex-1 ${inputBaseClass}`}                  
-                />
-              </div>
-            </div>            
-          </>
-        );
-
-        case 'organizacion':
-        return (
-          <>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="nombreOrganizacion">
-                Nombre de la organización
-              </label>
-              <input
-                type="text"
-                id="nombreOrganizacion"
-                name="nombreOrganizacion"
-                value={formData.nombreOrganizacion}
-                onChange={handleChange}
-                className={inputBaseClass}
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="razonOrganizacion">
-                Razón social de la organización
-              </label>
-              <input
-                type="text"
-                id="razonOrganizacion"
-                name="razonOrganizacion"
-                value={formData.razonOrganizacion}
-                onChange={handleChange}
-                className={inputBaseClass}
-              />
-            </div>
-            <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="numeroDocumento">
-                Número de documento
-              </label>
-              <div className="flex gap-2">
-                <select
-                  className={`w-24 text-gray-700 font-medium ${inputBaseClass}`}
-                  name="tipoDocumento"
-                  value={formData.tipoDocumento}
-                  onChange={handleChange}
-                >
-                  <option value="NIT">NIT</option>
-                </select>
-                <input
-                  type="text"
-                  id="numeroDocumento"
-                  name="numeroDocumento"
-                  value={formData.numeroDocumento}
-                  onChange={handleChange}
-                  className={`flex-1 ${inputBaseClass}`}                  
-                />
-              </div>
-            </div>            
-          </>
-        );
-      
+        return formData.paso === 1 ? <Step1Persona /> : <Step2Persona />;
+      case 'entidad':
+        return <Step1Entidad />;
+      case 'organizacion':
+        return <Step1Organizacion />;
       default:
         return null;
     }
@@ -276,99 +60,87 @@ const FormularioIniciativas: React.FC = () => {
       {/* Contenido del formulario */}
       <div className="bg-white rounded-lg border border-pink-200 p-6">
         <h2 className="text-2xl font-bold text-pink-500 mb-6">
-          Datos del remitente
+          {formData.paso === 1 ? 'Datos del remitente' : 'Datos de la iniciativa'}
         </h2>
 
-        {/* Tipo de remitente */}
-        <div className="mb-6">
-          <label className={labelBaseClass}>
-            Tipo de remitente
-          </label>
-          <div className="flex gap-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="tipoRemitente"
-                value="persona"
-                checked={formData.tipoRemitente === 'persona'}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              <span className="text-sm text-gray-700 font-medium">Persona Natural</span>
+        {/* Selector de tipo de remitente (solo visible en el paso 1) */}
+        {formData.paso === 1 && (
+          <div className="mb-6">
+            <label className="block text-gray-700 font-bold text-sm mb-2">
+              Tipo de remitente
             </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="tipoRemitente"
-                value="entidad"
-                checked={formData.tipoRemitente === 'entidad'}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              <span className="text-sm text-gray-700 font-medium">Entidad Pública</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="tipoRemitente"
-                value="organizacion"
-                checked={formData.tipoRemitente === 'organizacion'}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              <span className="text-sm text-gray-700 font-medium">Organización Privada</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Campos según tipo de remitente */}
-        {renderCamposSegunTipo()}
-
-        {/* Campos comunes */}
-        <div className="mb-4">
-              <label className={labelBaseClass} htmlFor="email">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={inputBaseClass}                
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className={labelBaseClass} htmlFor="numeroContacto">
-                Número de contacto
-              </label>
-              <div className="flex gap-2">
-                <span className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 font-medium">
-                  +57
-                </span>
+            <div className="flex gap-4">
+              <label className="flex items-center">
                 <input
-                  type="tel"
-                  id="numeroContacto"
-                  name="numeroContacto"
-                  value={formData.numeroContacto}
-                  onChange={handleChange}
-                  className={`flex-1 ${inputBaseClass}`}                  
+                  type="radio"
+                  name="tipoRemitente"
+                  value="persona"
+                  checked={formData.tipoRemitente === 'persona'}
+                  onChange={handleTipoRemitenteChange}
+                  className="mr-2"
                 />
-              </div>
-            </div>                
+                <span className="text-sm text-gray-700 font-medium">Persona Natural</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="tipoRemitente"
+                  value="entidad"
+                  checked={formData.tipoRemitente === 'entidad'}
+                  onChange={handleTipoRemitenteChange}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 font-medium">Entidad Pública</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="tipoRemitente"
+                  value="organizacion"
+                  checked={formData.tipoRemitente === 'organizacion'}
+                  onChange={handleTipoRemitenteChange}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700 font-medium">Organización Privada</span>
+              </label>
+            </div>
+          </div>
+        )}
 
-        {/* Botón Siguiente */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleNext}
-            className="bg-pink-500 text-white px-6 py-2 rounded-md hover:bg-pink-600 transition-colors"
-          >
-            Siguiente
-          </button>
+        {/* Renderizado del paso actual */}
+        {renderPasoActual()}
+
+        {/* Botones de navegación */}
+        <div className="flex justify-between mt-6">
+          {formData.paso > 1 && (
+            <button
+              onClick={() => updateFormData({ paso: formData.paso - 1 })}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Volver
+            </button>
+          )}
+          {((formData.tipoRemitente === 'persona' && formData.paso < 2) || 
+            (formData.tipoRemitente !== 'persona' && formData.paso === 1)) && (
+            <button
+              onClick={() => updateFormData({ paso: formData.paso + 1 })}
+              className="bg-pink-500 text-white px-6 py-2 rounded-md hover:bg-pink-600 transition-colors ml-auto"
+            >
+              Siguiente
+            </button>
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+// Componente principal que provee el contexto
+const FormularioIniciativas: React.FC = () => {
+  return (
+    <FormProvider>
+      <FormularioContenido />
+    </FormProvider>
   );
 };
 
