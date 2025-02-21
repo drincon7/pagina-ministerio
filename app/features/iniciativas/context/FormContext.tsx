@@ -13,7 +13,6 @@ interface FormContextType {
   resetForm: () => void;
 }
 
-// Estado inicial con todos los campos requeridos
 const initialFormData: FormData = {
   tipoRemitente: 'persona',
   paso: 1,
@@ -32,7 +31,13 @@ const initialFormData: FormData = {
     descripcion: '',
     localizaciones: [],
     poblacionBeneficiada: '',
-    valorTotal: ''
+    valorTotal: '',
+    // Agregamos los documentos dentro de datosPersona
+    documentos: {
+      cartaPresentacion: null,
+      anexoTecnico: null,
+      mgaNacional: null
+    }
   }
 };
 

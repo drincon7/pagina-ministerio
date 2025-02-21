@@ -4,6 +4,7 @@ import React from 'react';
 import { useFormContext } from '../../../context/FormContext';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import type { PersonaStep2Data, FormData, TipoProyecto } from '../../../types/formTypes';
+import StepNavigation from '../../StepNavigation';
 
 const Step2: React.FC = () => {
   const { formData, updateFormData } = useFormContext();
@@ -268,6 +269,7 @@ const Step2: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.valorTotal.message}</p>
         )}
       </div>
+      <StepNavigation />
     </div>
   );
 };

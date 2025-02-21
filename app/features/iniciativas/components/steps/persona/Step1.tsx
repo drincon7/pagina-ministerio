@@ -1,17 +1,56 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import { useFormContext } from '../../../context/FormContext';
 import { useFormValidation } from '../../../hooks/useFormValidation';
-import type { PersonaStep1Data } from '../../../types/formTypes';
+import axios from 'axios';
 
 const Step1: React.FC = () => {
   const { formData, updateFormData } = useFormContext();
   const { validationState } = useFormValidation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<string>('');
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
+
+  // Función de prueba directa a la API
+  const testDirectAPI = async () => {
+    setApiStatus('Probando conexión...');
+    try {
+      const response = await axios.get('https://13xv9sjf-8000.use2.devtunnels.ms/mie/api/remitente/');
+      console.log('Respuesta de la API:', response.data);
+      setApiStatus('Conexión exitosa! Ver consola para detalles');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error completo:', error);
+        setApiStatus(`Error en la conexión: ${error.message}`);
+      } else {
+        console.error('Error desconocido:', error);
+        setApiStatus('Error desconocido en la conexión');
+      }
+    }
+  };
+
+  // Función de prueba con un ID específico
+  const testWithId = async () => {
+    setApiStatus('Buscando remitente...');
+    try {
+      const response = await axios.get('https://13xv9sjf-8000.use2.devtunnels.ms/mie/api/remitente/?identificacion=10261858');
+      console.log('Respuesta de búsqueda:', response.data);
+      setApiStatus('Búsqueda exitosa! Ver consola para detalles');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error en búsqueda:', error);
+        setApiStatus(`Error en la búsqueda: ${error.message}`);
+      } else {
+        console.error('Error desconocido en búsqueda:', error);
+        setApiStatus('Error desconocido en la búsqueda');
+      }
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -28,6 +67,38 @@ const Step1: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Botones de prueba API */}
+      <div className="flex space-x-4 mb-4">
+        <button
+          type="button"
+          onClick={testDirectAPI}
+          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+        >
+          Probar Conexión API
+        </button>
+        <button
+          type="button"
+          onClick={testWithId}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Probar Búsqueda
+        </button>
+      </div>
+
+      {/* Estado de la API */}
+      {apiStatus && (
+        <div className="p-4 bg-gray-100 rounded-md mb-4">
+          <p className="font-mono text-sm">{apiStatus}</p>
+        </div>
+      )}
+
+      {/* Mensaje de error */}
+      {error && (
+        <div className="p-4 bg-red-100 text-red-700 rounded-md mb-4">
+          <p>{error}</p>
+        </div>
+      )}
+
       {/* Nombres */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="nombres">
@@ -164,6 +235,13 @@ const Step1: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.numeroContacto.message}</p>
         )}
       </div>
+
+      {/* Loading indicator */}
+      {loading && (
+        <div className="text-center py-2">
+          <p>Cargando...</p>
+        </div>
+      )}
     </div>
   );
 };

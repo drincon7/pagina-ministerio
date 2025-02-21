@@ -9,7 +9,7 @@ export const useFormStep = () => {
   const getMaxSteps = (tipoRemitente: TipoRemitente): number => {
     switch (tipoRemitente) {
       case 'persona':
-        return 2; // Por ahora solo tenemos 2 pasos para persona
+        return 3; // Por ahora solo tenemos 3 pasos para persona
       case 'entidad':
         return 1; // Por ahora solo tenemos 1 paso para entidad
       case 'organizacion':

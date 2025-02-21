@@ -1,5 +1,3 @@
-// src/features/iniciativas/types/formTypes.ts
-
 export type TipoRemitente = 'persona' | 'entidad' | 'organizacion';
 export type TipoDocumento = 'CC' | 'CE' | 'TI' | 'NIT';
 export type TipoProyecto = 'SOCIAL' | 'PRODUCTIVO' | 'INFRAESTRUCTURA';
@@ -28,6 +26,23 @@ export interface PersonaStep2Data {
   valorTotal: string;
 }
 
+// Interface para los documentos
+export interface DocumentoMetadata {
+  nombre: string;
+  tipo: string;
+  tamaño: number;
+}
+
+export interface Documentos {
+  cartaPresentacion: DocumentoMetadata | null;
+  anexoTecnico: DocumentoMetadata | null;
+  mgaNacional: DocumentoMetadata | null;
+}
+
+export interface PersonaStep3Data {
+  documentos: Documentos;
+}
+
 // Interface para el paso 1 de Entidad
 export interface EntidadStep1Data {
   nombres: string;  
@@ -47,7 +62,9 @@ export interface OrganizacionStep1Data {
 }
 
 // Tipo para los datos combinados de persona
-export type PersonaData = PersonaStep1Data & PersonaStep2Data;
+export type PersonaData = PersonaStep1Data & PersonaStep2Data & {
+  documentos?: Documentos;
+};
 
 // Interface principal del formulario
 export interface FormData {
