@@ -8,9 +8,9 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
     'Content-Type': 'application/json',
-    // Agregamos CORS headers
-    'Access-Control-Allow-Origin': '*',
+    'Accept': 'application/json',
   },
+  withCredentials: true, // 👈 Importante para cookies y autenticación CORS
 });
 
 // Agregamos un interceptor de solicitud para debugging

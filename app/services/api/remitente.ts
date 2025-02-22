@@ -23,6 +23,22 @@ export const RemitenteService = {
     }
   },
 
+  findAll: async (): Promise<Remitente[]> => {
+    try {
+      console.log('Obteniendo todos los remitentes...');
+      const url = `/mie/api/remitente/?format=json`;
+      console.log('URL completa:', process.env.NEXT_PUBLIC_API_URL + url);
+
+      const response = await api.get<RemitenteResponse>(url);
+      console.log('Respuesta de la API:', response.data);
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Error detallado al obtener remitentes:', error);
+      throw error;
+    }
+  },
+
   // Crear un nuevo remitente
   create: async (remitente: CreateRemitenteDTO): Promise<Remitente> => {
     console.log('Creando nuevo remitente:', remitente);
