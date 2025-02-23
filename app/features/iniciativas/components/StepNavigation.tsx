@@ -1,12 +1,32 @@
 'use client';
 
 import React from 'react';
-import { useFormStep } from '../hooks/useFormStep';
-import { useFormValidation } from '../hooks/useFormValidation';
+import { useEffect } from 'react';
+import { useFormContext } from '../context/FormContext';
 
 const StepNavigation: React.FC = () => {
-  const { currentStep, maxSteps, nextStep, prevStep } = useFormStep();
-  const { isValid } = useFormValidation();
+  const { 
+    formData,
+    maxSteps,
+    nextStep,
+    prevStep,
+    isCurrentStepValid,
+    validationState
+  } = useFormContext();
+
+  useEffect(() => {
+    console.log('Step Navigation - Current Step:', formData.paso);
+    console.log('Is Step Valid:', isCurrentStepValid);
+    console.log('Validation State:', validationState);
+  }, [formData.paso, isCurrentStepValid, validationState]);
+
+  const handleNext = () => {
+    console.log('Handle Next clicked', {
+      currentStep: formData.paso,
+      isValid: isCurrentStepValid
+    });
+    nextStep();
+  };
 
   return (
     <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
@@ -14,25 +34,25 @@ const StepNavigation: React.FC = () => {
         type="button"
         onClick={prevStep}
         className={`px-6 py-2 rounded-md text-sm font-medium
-          ${currentStep === 1 
+          ${formData.paso === 1 
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
-        disabled={currentStep === 1}
+        disabled={formData.paso === 1}
       >
         Volver
       </button>
 
-      {currentStep < maxSteps ? (
+      {formData.paso < maxSteps ? (
         <button
           type="button"
-          onClick={nextStep}
+          onClick={handleNext}
           className={`px-6 py-2 rounded-md text-sm font-medium 
-            ${!isValid
+            ${!isCurrentStepValid
               ? 'bg-pink-300 text-white cursor-not-allowed'
               : 'bg-pink-500 text-white hover:bg-pink-600'
             }`}
-          disabled={!isValid}
+          disabled={!isCurrentStepValid}
         >
           Siguiente
         </button>
@@ -40,11 +60,11 @@ const StepNavigation: React.FC = () => {
         <button
           type="button"
           className={`px-6 py-2 rounded-md text-sm font-medium 
-            ${!isValid
+            ${!isCurrentStepValid
               ? 'bg-pink-300 text-white cursor-not-allowed'
               : 'bg-pink-500 text-white hover:bg-pink-600'
             }`}
-          disabled={!isValid}
+          disabled={!isCurrentStepValid}
         >
           Finalizar y enviar
         </button>

@@ -1,18 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useFormContext } from '../context/FormContext';
 import type { ValidationState, FormData } from '../types/formTypes';
 
 export const useFormValidation = () => {
-  const { formData, validationState, updateValidation } = useFormContext();
-  const [isValid, setIsValid] = useState(false);
+  const { formData, updateValidation, validationState } = useFormContext();
 
-  useEffect(() => {
-    validateCurrentStep();
-  }, [formData]);
-
-  const validateCurrentStep = () => {
+  const validateCurrentStep = useCallback(() => {
     let newValidationState: ValidationState = {};
     
     if (formData.tipoRemitente === 'persona') {
@@ -48,7 +43,8 @@ export const useFormValidation = () => {
         case 2:
           const step2Data = formData.datosPersona;
           if (step2Data) {
-            newValidationState = {
+            // Validación básica de campos
+            const baseValidation = {
               tipoProyecto: {
                 isValid: !!step2Data.tipoProyecto,
                 message: step2Data.tipoProyecto ? '' : 'El tipo de proyecto es requerido'
@@ -68,8 +64,29 @@ export const useFormValidation = () => {
                 message: step2Data.poblacionBeneficiada ? '' : 'La población beneficiada es requerida'
               },
               valorTotal: {
-                isValid: !!step2Data.valorTotal,
-                message: step2Data.valorTotal ? '' : 'El valor total es requerido'
+                isValid: !!step2Data.valorTotal && !isNaN(Number(step2Data.valorTotal)),
+                message: !step2Data.valorTotal ? 'El valor total es requerido' : 
+                        isNaN(Number(step2Data.valorTotal)) ? 'El valor debe ser numérico' : ''
+              }
+            };
+            
+
+            // Validación de localizaciones
+            const localizaciones = step2Data.localizaciones || [];
+            const localizacionesValidas = localizaciones.every(loc => 
+              loc.departamento && loc.ciudad
+            );
+
+            console.log('Validation State:', baseValidation);
+            console.log('Are all fields valid?', Object.values(baseValidation).every(field => field.isValid));
+        
+
+            newValidationState = {
+              ...baseValidation,
+              localizaciones: {
+                isValid: localizacionesValidas && localizaciones.length > 0,
+                message: !localizacionesValidas ? 'Todas las localizaciones deben estar completas' : 
+                         localizaciones.length === 0 ? 'Debe agregar al menos una localización' : ''
               }
             };
           }
@@ -98,11 +115,13 @@ export const useFormValidation = () => {
     }
 
     updateValidation(newValidationState);
-    setIsValid(Object.values(newValidationState).every((v) => v?.isValid === true));
-  };
+  }, [formData, updateValidation]);
+
+  useEffect(() => {
+    validateCurrentStep();
+  }, [validateCurrentStep, formData]);
 
   return {
-    isValid,
     validationState,
     validateCurrentStep,
   };

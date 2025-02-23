@@ -4,6 +4,8 @@ import React from 'react';
 import { FormProvider } from '../features/iniciativas/context/FormContext';
 import Step1Persona from '../features/iniciativas/components/steps/persona/Step1';
 import Step2Persona from '../features/iniciativas/components/steps/persona/Step2';
+import Step3Persona from '../features/iniciativas/components/steps/persona/Step3'
+
 import Step1Entidad from '../features/iniciativas/components/steps/entidad/Step1';
 import Step1Organizacion from '../features/iniciativas/components/steps/organizacion/Step1';
 import { useFormContext } from '../features/iniciativas/context/FormContext';
@@ -22,9 +24,21 @@ const FormularioContenido: React.FC = () => {
 
   // Renderizado del paso actual según el tipo de remitente
   const renderPasoActual = () => {
+    if (formData.tipoRemitente === 'persona') {
+      switch (formData.paso) {
+        case 1:
+          return <Step1Persona />;
+        case 2:
+          return <Step2Persona />;
+        case 3:
+          return <Step3Persona />;
+        default:
+          return <Step1Persona />;
+      }
+    }
+  
+    // Para otros tipos de remitente
     switch (formData.tipoRemitente) {
-      case 'persona':
-        return formData.paso === 1 ? <Step1Persona /> : <Step2Persona />;
       case 'entidad':
         return <Step1Entidad />;
       case 'organizacion':
@@ -55,7 +69,17 @@ const FormularioContenido: React.FC = () => {
           </div>
           <span className="text-xs mt-1 text-gray-600">Datos de la iniciativa</span>
         </div>
+        <div className="flex-1 h-px bg-gray-300"></div>
+        <div className="flex flex-col items-center">
+          <div className={`w-8 h-8 rounded-full ${
+            formData.paso === 3 ? 'bg-pink-500 text-white' : 'bg-gray-300'
+          } flex items-center justify-center font-bold text-sm`}>
+            3
+          </div>
+          <span className="text-xs mt-1 text-gray-600">Documentos</span>
+        </div>
       </div>
+      
 
       {/* Contenido del formulario */}
       <div className="bg-white rounded-lg border border-pink-200 p-6">

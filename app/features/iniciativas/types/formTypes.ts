@@ -2,6 +2,13 @@ export type TipoRemitente = 'persona' | 'entidad' | 'organizacion';
 export type TipoDocumento = 'CC' | 'CE' | 'TI' | 'NIT';
 export type TipoProyecto = 'SOCIAL' | 'PRODUCTIVO' | 'INFRAESTRUCTURA';
 
+// Validation types
+export interface ValidationField {
+  isValid: boolean;
+  message?: string;
+}
+
+
 // Interface para el paso 1 de persona
 export interface PersonaStep1Data {
   nombres: string;
