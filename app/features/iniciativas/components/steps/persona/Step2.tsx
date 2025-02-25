@@ -56,6 +56,7 @@ const Step2: React.FC = () => {
       }
     });
   };
+
   const handleRemoveLocation = (index: number) => {
     const updatedLocalizaciones = [...(datosPersona.localizaciones || [])];
     updatedLocalizaciones.splice(index, 1);
@@ -93,7 +94,7 @@ const Step2: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.tipoProyecto.message}</p>
         )}
       </div>
-
+      
       {/* Título de la iniciativa */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="titulo">

@@ -132,28 +132,7 @@ const FormularioContenido: React.FC = () => {
         )}
 
         {/* Renderizado del paso actual */}
-        {renderPasoActual()}
-
-        {/* Botones de navegación */}
-        <div className="flex justify-between mt-6">
-          {formData.paso > 1 && (
-            <button
-              onClick={() => updateFormData({ paso: formData.paso - 1 })}
-              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors"
-            >
-              Volver
-            </button>
-          )}
-          {((formData.tipoRemitente === 'persona' && formData.paso < 2) || 
-            (formData.tipoRemitente !== 'persona' && formData.paso === 1)) && (
-            <button
-              onClick={() => updateFormData({ paso: formData.paso + 1 })}
-              className="bg-pink-500 text-white px-6 py-2 rounded-md hover:bg-pink-600 transition-colors ml-auto"
-            >
-              Siguiente
-            </button>
-          )}
-        </div>
+        {renderPasoActual()}        
       </div>
     </div>
   );

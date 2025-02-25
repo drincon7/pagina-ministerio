@@ -134,8 +134,6 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [validationState]);
   
 
-// En FormContext.tsx
-
 const nextStep = useCallback(() => {
   console.log('nextStep called', {
     currentStep: formData.paso,

@@ -10,7 +10,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // 👈 Importante para cookies y autenticación CORS
+  withCredentials: false, // 👈 Importante para cookies y autenticación CORS
 });
 
 // Agregamos un interceptor de solicitud para debugging
