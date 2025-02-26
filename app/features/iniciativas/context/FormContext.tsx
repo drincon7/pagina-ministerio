@@ -1,191 +1,289 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { FormData, ValidationState, ValidationField, TipoRemitente } from '../types/formTypes';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { FormData, ValidationState, ValidationResult } from '../types/formTypes';
 
 interface FormContextType {
   formData: FormData;
-  validationState: ValidationState;
-  updateFormData: (data: Partial<FormData>) => void;
-  updateValidation: (validation: Partial<ValidationState>) => void;
+  updateFormData: (updates: Partial<FormData>) => void;
+  resetForm: () => void;
   nextStep: () => void;
   prevStep: () => void;
-  resetForm: () => void;
   maxSteps: number;
-  canProceed: boolean;
+  validationState: ValidationState;
+  setValidationState: React.Dispatch<React.SetStateAction<ValidationState>>;
   isCurrentStepValid: boolean;
+  validateCurrentStep: () => boolean;
 }
 
+// Valores iniciales del formulario
 const initialFormData: FormData = {
-  tipoRemitente: 'persona',
   paso: 1,
+  tipoRemitente: 'persona', // Valores posibles: 'persona', 'entidad', 'organizacion'
   datosPersona: {
+    remitenteId: '',
+    tipoDocumento: 'CC',
+    numeroDocumento: '',
     nombres: '',
     primerApellido: '',
     segundoApellido: '',
-    tipoDocumento: 'CC',
+    email: '',
+    numeroContacto: ''
+  },
+  datosEntidad: {
+    remitenteId: '',
+    nombre: '',
+    nit: '',
+    email: '',
+    telefono: ''
+  },
+  datosOrganizacion: {
+    remitenteId: '',
+    nombreOrganizacion: '',
+    razonOrganizacion: '',
+    tipoDocumento: 'NIT',
     numeroDocumento: '',
     email: '',
-    numeroContacto: '',
-    tipoProyecto: 'SOCIAL',
-    titulo: '',
-    descripcion: '',
-    localizaciones: [{ departamento: '', ciudad: '' }], // Inicializamos con una localización
-    poblacionBeneficiada: '',
-    valorTotal: '',
-    documentos: {
-      cartaPresentacion: null,
-      anexoTecnico: null,
-      mgaNacional: null
-    }
-  }
-};
-
-const getMaxSteps = (tipoRemitente: TipoRemitente): number => {
-  switch (tipoRemitente) {
-    case 'persona':
-      return 3;
-    case 'entidad':
-    case 'organizacion':
-      return 1;
-    default:
-      return 1;
+    numeroContacto: ''
   }
 };
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
-export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [validationState, setValidationState] = useState<ValidationState>({});
+  const [isCurrentStepValid, setIsCurrentStepValid] = useState<boolean>(false);
 
-  // Persistencia en localStorage
-  useEffect(() => {
-    const savedData = localStorage.getItem('formData');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setFormData(prevData => ({
-          ...initialFormData,
-          ...parsedData,
-          datosPersona: {
-            ...initialFormData.datosPersona,
-            ...(parsedData.datosPersona || {})
-          }
-        }));
-      } catch (error) {
-        console.error('Error parsing saved form data:', error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('formData', JSON.stringify(formData));
-  }, [formData]);
-
-  const updateFormData = useCallback((data: Partial<FormData>) => {
-    setFormData(prev => ({
-      ...prev,
-      ...data,
-      datosPersona: data.datosPersona ? {
-        ...prev.datosPersona,
-        ...data.datosPersona
-      } : prev.datosPersona
+  // Actualizar el formulario
+  const updateFormData = (updates: Partial<FormData>) => {
+    setFormData(prevData => ({
+      ...prevData,
+      ...updates
     }));
-  }, []);
-
-  const updateValidation = useCallback((validation: Partial<ValidationState>) => {
-    setValidationState(prev => {
-      const newValidation: ValidationState = { ...prev };
-      
-      Object.entries(validation).forEach(([key, value]) => {
-        if (value) {
-          newValidation[key] = {
-            isValid: value.isValid,
-            message: value.message
-          } as ValidationField;
-        }
-      });
-      
-      return newValidation;
-    });
-  }, []);
-
-  const maxSteps = getMaxSteps(formData.tipoRemitente);
-  const canProceed = formData.paso < maxSteps;
-
-  // Validación del paso actual
-  const isCurrentStepValid = useCallback(() => {
-    console.log('Current validation state:', validationState);
-    const currentStepFields = Object.values(validationState);
-  
-    if (currentStepFields.length === 0) {
-      return false; // Si no hay campos para validar, no es válido
-    }
-    
-    const allFieldsValid = currentStepFields.every((field): field is ValidationField => 
-      field !== undefined && field.isValid === true
-    );
-    
-    // Añade console.log para debugging
-    console.log('All fields valid?', allFieldsValid);
-    
-    return allFieldsValid;
-  }, [validationState]);
-  
-
-const nextStep = useCallback(() => {
-  console.log('nextStep called', {
-    currentStep: formData.paso,
-    maxSteps,
-    isValid: isCurrentStepValid()
-  });
-
-  if (formData.paso < maxSteps && isCurrentStepValid()) {
-    setFormData(prev => {
-      const newStep = prev.paso + 1;
-      console.log('Updating to step:', newStep);
-      return {
-        ...prev,
-        paso: newStep
-      };
-    });
-  }
-}, [formData.paso, maxSteps, isCurrentStepValid]);
-
-  const prevStep = useCallback(() => {
-    setFormData(prev => ({
-      ...prev,
-      paso: Math.max(1, prev.paso - 1)
-    }));
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setFormData(initialFormData);
-    setValidationState({});
-    localStorage.removeItem('formData');
-  }, []);
-
-  const value = {
-    formData,
-    validationState,
-    updateFormData,
-    updateValidation,
-    nextStep,
-    prevStep,
-    resetForm,
-    maxSteps,
-    canProceed,
-    isCurrentStepValid: isCurrentStepValid()
   };
 
-  return <FormContext.Provider value={value}>{children}</FormContext.Provider>;
+  // Reiniciar el formulario
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setValidationState({});
+  };
+
+  // Avanzar al siguiente paso
+  const nextStep = () => {
+    setFormData(prevData => ({
+      ...prevData,
+      paso: prevData.paso + 1
+    }));
+  };
+
+  // Retroceder al paso anterior
+  const prevStep = () => {
+    setFormData(prevData => ({
+      ...prevData,
+      paso: Math.max(1, prevData.paso - 1)
+    }));
+  };
+
+  // Determinar el número máximo de pasos según el tipo de remitente
+  const getMaxSteps = () => {
+    switch (formData.tipoRemitente) {
+      case 'persona':
+        return 3;
+      case 'entidad':
+      case 'organizacion':
+        return 2;
+      default:
+        return 1;
+    }
+  };
+
+  // Función de validación para cada campo
+  const validateField = (field: string, value: any, rules: { required?: boolean, pattern?: RegExp, minLength?: number, maxLength?: number }): ValidationResult => {
+    const result: ValidationResult = { isValid: true, message: '' };
+
+    if (rules.required && (!value || value.trim() === '')) {
+      result.isValid = false;
+      result.message = 'Este campo es obligatorio';
+      return result;
+    }
+
+    if (value && rules.pattern && !rules.pattern.test(value)) {
+      result.isValid = false;
+      result.message = 'Formato inválido';
+      return result;
+    }
+
+    if (value && rules.minLength && value.length < rules.minLength) {
+      result.isValid = false;
+      result.message = `Mínimo ${rules.minLength} caracteres`;
+      return result;
+    }
+
+    if (value && rules.maxLength && value.length > rules.maxLength) {
+      result.isValid = false;
+      result.message = `Máximo ${rules.maxLength} caracteres`;
+      return result;
+    }
+
+    return result;
+  };
+
+  // Validar el paso actual
+  const validateCurrentStep = useCallback(() => {
+    let stepIsValid = true;
+    let newValidationState: ValidationState = {};
+
+    // Validación según tipo de remitente y paso actual
+    if (formData.tipoRemitente === 'persona' && formData.paso === 1) {
+      // Validar Número de Documento
+      newValidationState.numeroDocumento = validateField(
+        'numeroDocumento',
+        formData.datosPersona?.numeroDocumento,
+        { required: true, pattern: /^\d+$/, minLength: 6, maxLength: 12 }
+      );
+
+      // Validar Nombres
+      newValidationState.nombres = validateField(
+        'nombres',
+        formData.datosPersona?.nombres,
+        { required: true, minLength: 2 }
+      );
+
+      // Validar Primer Apellido
+      newValidationState.primerApellido = validateField(
+        'primerApellido',
+        formData.datosPersona?.primerApellido,
+        { required: true, minLength: 2 }
+      );
+
+      // Validar Email
+      newValidationState.email = validateField(
+        'email',
+        formData.datosPersona?.email,
+        { 
+          required: true, 
+          pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+        }
+      );
+
+      // Validar Número de Contacto
+      newValidationState.numeroContacto = validateField(
+        'numeroContacto',
+        formData.datosPersona?.numeroContacto,
+        { required: true, pattern: /^\d{10}$/ }
+      );
+    }
+    // Validación para entidades
+    else if (formData.tipoRemitente === 'entidad' && formData.paso === 1) {
+      // Validar Nombre
+      newValidationState.nombre = validateField(
+        'nombre',
+        formData.datosEntidad?.nombre,
+        { required: true, minLength: 2 }
+      );
+
+      // Validar NIT
+      newValidationState.nit = validateField(
+        'nit',
+        formData.datosEntidad?.nit,
+        { required: true, pattern: /^\d{9,10}-?\d?$/ }
+      );
+
+      // Validar Email
+      newValidationState.email = validateField(
+        'email',
+        formData.datosEntidad?.email,
+        { 
+          required: true, 
+          pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+        }
+      );
+
+      // Validar Teléfono
+      newValidationState.telefono = validateField(
+        'telefono',
+        formData.datosEntidad?.telefono,
+        { required: true, pattern: /^\d{10}$/ }
+      );
+    }
+    // Validación para organizaciones
+    else if (formData.tipoRemitente === 'organizacion' && formData.paso === 1) {
+      // Validar Nombre de Organización
+      newValidationState.nombreOrganizacion = validateField(
+        'nombreOrganizacion',
+        formData.datosOrganizacion?.nombreOrganizacion,
+        { required: true, minLength: 2 }
+      );
+
+      // Validar Razón Social (modificar aquí)
+      newValidationState.razonOrganizacion = validateField(
+        'razonOrganizacion',
+        formData.datosOrganizacion?.razonOrganizacion,
+        { required: true, pattern: /^\d{9,10}-?\d?$/ }
+      );
+   
+      // Validar Email
+      newValidationState.email = validateField(
+        'email',
+        formData.datosOrganizacion?.email,
+        { 
+          required: true, 
+          pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+        }
+      );
+
+      // Validar Número de Contacto
+      newValidationState.numeroContacto = validateField(
+        'numeroContacto',
+        formData.datosOrganizacion?.numeroContacto,
+        { required: true, pattern: /^\d{10}$/ }
+      );
+    }
+
+    // Agregar validaciones para otros pasos según sea necesario...
+
+    // Verificar si todos los campos validados son válidos
+    stepIsValid = Object.values(newValidationState).every(result => result.isValid);
+
+    // Actualizar el estado de validación
+    setValidationState(newValidationState);
+    setIsCurrentStepValid(stepIsValid);
+
+    return stepIsValid;
+  }, [formData]); // Solo depender de formData, no de validationState
+
+  // Ejecutar validación cuando cambia el paso o tipo de remitente
+  useEffect(() => {
+    validateCurrentStep();
+  }, [formData.paso, formData.tipoRemitente, validateCurrentStep]);
+
+  return (
+    <FormContext.Provider
+      value={{
+        formData,
+        updateFormData,
+        resetForm,
+        nextStep,
+        prevStep,
+        maxSteps: getMaxSteps(),
+        validationState,
+        setValidationState,
+        isCurrentStepValid,
+        validateCurrentStep
+      }}
+    >
+      {children}
+    </FormContext.Provider>
+  );
 };
 
 export const useFormContext = () => {
   const context = useContext(FormContext);
   if (context === undefined) {
-    throw new Error('useFormContext must be used within a FormProvider');
+    throw new Error('useFormContext debe ser usado dentro de un FormProvider');
   }
   return context;
 };
+
+export default FormContext;

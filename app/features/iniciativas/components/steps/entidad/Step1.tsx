@@ -1,201 +1,155 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { RemitenteService } from '@/services/api/remitente';
+import { useFormValidation } from '../../../hooks/useFormValidation';
+import StepNavigation from '../../StepNavigation';
 
-export const Step1 = () => {
-  const { formData, updateFormData, updateValidation, nextStep } = useFormContext();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const Step1: React.FC = () => {
+  const { formData, updateFormData } = useFormContext();
+  const { validationState, validateCurrentStep } = useFormValidation();
 
-  // Inicializamos el estado local del formulario con los valores existentes
-  const [formState, setFormState] = useState({
-    numeroDocumento: formData.datosPersona.numeroDocumento || '',
-    nombres: formData.datosPersona.nombres || '',
-    primerApellido: formData.datosPersona.primerApellido || '',
-    segundoApellido: formData.datosPersona.segundoApellido || '',
-    email: formData.datosPersona.email || '',
-    numeroContacto: formData.datosPersona.numeroContacto || '',
-  });
+  // Clases base comunes
+  const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
+  const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormState(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Limpiamos la validación del campo cuando cambia
-    updateValidation({
-      [name]: { isValid: true, message: '' }
-    });
-    setError(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  // Efecto para validar los datos del formulario cuando hay cambios significativos
+  useEffect(() => {
+    // Usamos un timeout para reducir las validaciones mientras el usuario escribe
+    const validationTimeout = setTimeout(() => {
+      validateCurrentStep();
+    }, 300);
     
-    console.log('Iniciando envío del formulario con datos:', formState);
+    return () => clearTimeout(validationTimeout);
+  }, [
+    formData.datosEntidad?.nombre,
+    formData.datosEntidad?.nit,
+    formData.datosEntidad?.email,
+    formData.datosEntidad?.telefono,
+    validateCurrentStep
+  ]);
+  
+  // Validar los datos iniciales al montar el componente
+  useEffect(() => {
+    validateCurrentStep();
+  }, [validateCurrentStep]);
 
-    try {
-      // Validar que el número de documento sea válido
-      const numeroDocumento = parseInt(formState.numeroDocumento);
-      if (isNaN(numeroDocumento)) {
-        throw new Error('El número de documento debe ser un número válido');
-      }
+  // Manejo de cambios en los campos del formulario
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+    const { name, value } = e.target;
+    
+    const updatedEntidadData = {
+      ...formData.datosEntidad,
+      [name]: value,
+    };
 
-      // Buscar si el remitente ya existe
-      console.log('Buscando remitente con número de documento:', numeroDocumento);
-      const existingRemitente = await RemitenteService.findByIdentificacion(numeroDocumento);
-      console.log('Respuesta de la API:', existingRemitente);
-
-      if (existingRemitente) {
-        // Si existe, actualizamos el formulario con los datos existentes
-        updateFormData({
-          datosPersona: {
-            ...formData.datosPersona,
-            numeroDocumento: existingRemitente.identificacion.toString(),
-            nombres: existingRemitente.nombre,
-            primerApellido: existingRemitente.primer_apellido,
-            segundoApellido: existingRemitente.segundo_apellido || '',
-            email: existingRemitente.email,
-            numeroContacto: existingRemitente.telefono.toString(),
-          }
-        });
-      } else {
-        // Si no existe, actualizamos con los datos del formulario
-        updateFormData({
-          datosPersona: {
-            ...formData.datosPersona,
-            numeroDocumento: formState.numeroDocumento,
-            nombres: formState.nombres.toUpperCase(),
-            primerApellido: formState.primerApellido.toUpperCase(),
-            segundoApellido: formState.segundoApellido.toUpperCase(),
-            email: formState.email.toLowerCase(),
-            numeroContacto: formState.numeroContacto,
-          }
-        });
-      }
-
-      // Avanzar al siguiente paso
-      nextStep();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al procesar el formulario');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    updateFormData({
+      datosEntidad: updatedEntidadData
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="numeroDocumento" className="block text-sm font-medium text-gray-700">
-          Número de Documento *
+    <div className="space-y-4">
+      {/* Nombre de la Entidad */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="nombre">
+          Nombre de la entidad <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          id="numeroDocumento"
-          name="numeroDocumento"
-          value={formState.numeroDocumento}
-          onChange={handleInputChange}
+          id="nombre"
+          name="nombre"
+          value={formData.datosEntidad?.nombre ?? ''}
+          onChange={handleChange}
+          className={`${inputBaseClass} ${
+            validationState.nombre?.isValid === false ? 'border-red-500' : ''
+          }`}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
+        {validationState.nombre?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.nombre.message}</p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="nombres" className="block text-sm font-medium text-gray-700">
-          Nombres *
+      {/* Razón social (NIT) */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="nit">
+          Razón social de la entidad <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          id="nombres"
-          name="nombres"
-          value={formState.nombres}
-          onChange={handleInputChange}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
+        <div className="flex gap-2">
+          <span className="w-16 text-gray-700 font-medium border border-gray-300 rounded-md flex items-center justify-center">
+            NIT.
+          </span>
+          <input
+            type="text"
+            id="nit"
+            name="nit"
+            value={formData.datosEntidad?.nit ?? ''}
+            onChange={handleChange}
+            placeholder="Número de NIT"
+            className={`flex-1 ${inputBaseClass} ${
+              validationState.nit?.isValid === false ? 'border-red-500' : ''
+            }`}
+            required
+          />
+        </div>
+        {validationState.nit?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.nit.message}</p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="primerApellido" className="block text-sm font-medium text-gray-700">
-          Primer Apellido *
-        </label>
-        <input
-          type="text"
-          id="primerApellido"
-          name="primerApellido"
-          value={formState.primerApellido}
-          onChange={handleInputChange}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="segundoApellido" className="block text-sm font-medium text-gray-700">
-          Segundo Apellido
-        </label>
-        <input
-          type="text"
-          id="segundoApellido"
-          name="segundoApellido"
-          value={formState.segundoApellido}
-          onChange={handleInputChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email *
+      {/* Email */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="email">
+          Correo electrónico <span className="text-red-500">*</span>
         </label>
         <input
           type="email"
           id="email"
           name="email"
-          value={formState.email}
-          onChange={handleInputChange}
+          value={formData.datosEntidad?.email ?? ''}
+          onChange={handleChange}
+          placeholder="ejemplo@gmail.com"
+          className={`${inputBaseClass} ${
+            validationState.email?.isValid === false ? 'border-red-500' : ''
+          }`}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
+        {validationState.email?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="numeroContacto" className="block text-sm font-medium text-gray-700">
-          Número de Contacto *
+      {/* Número de Contacto */}
+      <div className="mb-6">
+        <label className={labelBaseClass} htmlFor="telefono">
+          Número de contacto <span className="text-red-500">*</span>
         </label>
-        <input
-          type="tel"
-          id="numeroContacto"
-          name="numeroContacto"
-          value={formState.numeroContacto}
-          onChange={handleInputChange}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-
-      {error && (
-        <div className="text-red-600 text-sm">
-          {error}
+        <div className="flex gap-2">
+          <span className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 font-medium">
+            +57
+          </span>
+          <input
+            type="tel"
+            id="telefono"
+            name="telefono"
+            value={formData.datosEntidad?.telefono ?? ''}
+            onChange={handleChange}
+            placeholder="Ej: 10090292929"
+            className={`flex-1 ${inputBaseClass} ${
+              validationState.telefono?.isValid === false ? 'border-red-500' : ''
+            }`}
+            required
+          />
         </div>
-      )}
-
-      <div className="flex justify-end space-x-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {loading ? 'Procesando...' : 'Siguiente'}
-        </button>
+        {validationState.telefono?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.telefono.message}</p>
+        )}
       </div>
-    </form>
+
+      {/* Navegación entre pasos */}
+      <StepNavigation/>
+    </div>
   );
 };
 

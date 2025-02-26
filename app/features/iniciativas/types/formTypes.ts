@@ -1,87 +1,84 @@
-// src/features/iniciativas/types/formTypes.ts
-
-export type TipoRemitente = 'persona' | 'entidad' | 'organizacion';
-export type TipoDocumento = 'CC' | 'CE' | 'TI' | 'NIT';
-export type TipoProyecto = 'SOCIAL' | 'PRODUCTIVO' | 'INFRAESTRUCTURA';
-
-// Interface para la localización
-export interface Localizacion {
-  departamento: string;
-  ciudad: string;
-}
-
-// Interface para el paso 1 de persona (solo datos del formulario)
-export interface PersonaStep1Data {
-  remitenteId?: string;  // ID del remitente (para referencia, solo se usa en el frontend)
+// Tipo de datos para la sección de persona
+export interface PersonaData {
+  remitenteId?: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
   nombres: string;
   primerApellido: string;
   segundoApellido?: string;
-  tipoDocumento: TipoDocumento;
+  email: string;
+  numeroContacto: string;
+}
+
+// Tipo de datos con campos opcionales para uso en componentes
+export interface PersonaDataPartial {
+  remitenteId?: string;
+  tipoDocumento?: string;
+  numeroDocumento?: string;
+  nombres?: string;
+  primerApellido?: string;
+  segundoApellido?: string;
+  email?: string;
+  numeroContacto?: string;
+}
+
+// Tipo de datos para la sección de entidad
+export interface EntidadData {
+  remitenteId?: string;
+  nombre: string;
+  nit: string;
+  direccion: string;
+  email: string;
+  telefono: string;
+}
+
+// Tipo de datos con campos opcionales para uso en componentes
+export interface EntidadDataPartial {
+  remitenteId?: string;
+  nombre?: string;
+  nit?: string;
+  direccion?: string;
+  email?: string;
+  telefono?: string;
+}
+
+// Tipo de datos para la sección de organización
+export interface OrganizacionData {
+  remitenteId?: string;
+  nombreOrganizacion: string;
+  razonOrganizacion: string;
+  tipoDocumento: string;
   numeroDocumento: string;
   email: string;
   numeroContacto: string;
 }
 
-// Interface para el paso 2 de persona
-export interface PersonaStep2Data {
-  tipoProyecto: TipoProyecto;
-  titulo: string;
-  descripcion: string;
-  localizaciones: Localizacion[];
-  poblacionBeneficiada: string;
-  valorTotal: string;
+// Tipo de datos con campos opcionales para uso en componentes
+export interface OrganizacionDataPartial {
+  remitenteId?: string;
+  nombreOrganizacion?: string;
+  razonOrganizacion?: string;
+  tipoDocumento?: string;
+  numeroDocumento?: string;
+  email?: string;
+  numeroContacto?: string;
 }
 
-// Interface para los documentos
-export interface DocumentoMetadata {
-  nombre: string;
-  tipo: string;
-  tamaño: number;
-}
-
-export interface Documentos {
-  cartaPresentacion: DocumentoMetadata | null;
-  anexoTecnico: DocumentoMetadata | null;
-  mgaNacional: DocumentoMetadata | null;
-}
-
-// Tipo para los datos combinados de persona
-export type PersonaData = PersonaStep1Data & PersonaStep2Data & {
-  documentos: Documentos;
-};
-
-// Interface principal del formulario
+// Tipo de datos completo del formulario
 export interface FormData {
-  tipoRemitente: TipoRemitente;
   paso: number;
-  datosPersona: Partial<PersonaData>;
+  tipoRemitente: 'persona' | 'entidad' | 'organizacion';
+  datosPersona?: PersonaDataPartial;
+  datosEntidad?: EntidadDataPartial;
+  datosOrganizacion?: OrganizacionDataPartial;
 }
 
-// Interface para el estado de validación
-export interface ValidationField {
+// Tipos para la validación
+export interface ValidationResult {
   isValid: boolean;
-  message?: string;
+  message: string;
 }
 
 export interface ValidationState {
-  [key: string]: ValidationField;
-}
-
-// Interface para las respuestas de la API
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
-
-// Interface para el modelo de Remitente (según respuesta de la API)
-export interface RemitenteResponse {
-  identificacion: number;
-  nombre: string;
-  primer_apellido: string;
-  segundo_apellido: string | null;
-  email: string;
-  telefono: number;
-  // No incluimos campos que son manejados por el backend
+  [key: string]: ValidationResult;
 }

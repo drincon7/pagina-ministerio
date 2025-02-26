@@ -186,6 +186,7 @@ const Step3: React.FC = () => {
         type="mgaNacional"
         description="Metodología General Ajustada para proyectos de inversión pública"
       />
+      <StepNavigation />
     </div>
   );
 };
