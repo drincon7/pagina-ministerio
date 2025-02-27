@@ -1,18 +1,21 @@
-// Tipo de datos para la sección de persona
-export interface PersonaData {
-  remitenteId?: string;
-  tipoDocumento: string;
-  numeroDocumento: string;
-  nombres: string;
-  primerApellido: string;
-  segundoApellido?: string;
-  email: string;
-  numeroContacto: string;
+// Definiciones de tipos para el formulario de iniciativas
+
+// Interfaz para el resultado de validación
+export interface ValidationResult {
+  isValid: boolean;
+  message: string;
 }
 
-// Tipo de datos con campos opcionales para uso en componentes
+// Estado de validación del formulario
+export interface ValidationState {
+  [key: string]: ValidationResult | undefined;
+}
+
+// Datos parciales para persona
 export interface PersonaDataPartial {
   remitenteId?: string;
+  iniciativaId?: string; // ID de la iniciativa creada
+  radicado?: number;     // Número de radicado generado por el sistema
   tipoDocumento?: string;
   numeroDocumento?: string;
   nombres?: string;
@@ -20,65 +23,52 @@ export interface PersonaDataPartial {
   segundoApellido?: string;
   email?: string;
   numeroContacto?: string;
+  tipoProyecto?: string;
+  titulo?: string;
+  descripcion?: string;
+  poblacionBeneficiada?: string;
+  valorTotal?: string;
 }
 
-// Tipo de datos para la sección de entidad
-export interface EntidadData {
-  remitenteId?: string;
-  nombre: string;
-  nit: string;
-  direccion: string;
-  email: string;
-  telefono: string;
-}
-
-// Tipo de datos con campos opcionales para uso en componentes
+// Datos parciales para entidad
 export interface EntidadDataPartial {
   remitenteId?: string;
+  iniciativaId?: string; // ID de la iniciativa creada
+  radicado?: number;     // Número de radicado generado por el sistema
   nombre?: string;
   nit?: string;
-  direccion?: string;
   email?: string;
   telefono?: string;
+  tipoProyecto?: string;
+  titulo?: string;
+  descripcion?: string;
+  poblacionBeneficiada?: string;
+  valorTotal?: string;
 }
 
-// Tipo de datos para la sección de organización
-export interface OrganizacionData {
-  remitenteId?: string;
-  nombreOrganizacion: string;
-  razonOrganizacion: string;
-  tipoDocumento: string;
-  numeroDocumento: string;
-  email: string;
-  numeroContacto: string;
-}
-
-// Tipo de datos con campos opcionales para uso en componentes
+// Datos parciales para organización
 export interface OrganizacionDataPartial {
   remitenteId?: string;
+  iniciativaId?: string; // ID de la iniciativa creada
+  radicado?: number;     // Número de radicado generado por el sistema
   nombreOrganizacion?: string;
   razonOrganizacion?: string;
   tipoDocumento?: string;
   numeroDocumento?: string;
   email?: string;
   numeroContacto?: string;
+  tipoProyecto?: string;
+  titulo?: string;
+  descripcion?: string;
+  poblacionBeneficiada?: string;
+  valorTotal?: string;
 }
 
-// Tipo de datos completo del formulario
+// Estructura completa de datos del formulario
 export interface FormData {
   paso: number;
   tipoRemitente: 'persona' | 'entidad' | 'organizacion';
   datosPersona?: PersonaDataPartial;
   datosEntidad?: EntidadDataPartial;
   datosOrganizacion?: OrganizacionDataPartial;
-}
-
-// Tipos para la validación
-export interface ValidationResult {
-  isValid: boolean;
-  message: string;
-}
-
-export interface ValidationState {
-  [key: string]: ValidationResult;
 }

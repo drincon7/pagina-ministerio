@@ -28,14 +28,24 @@ const initialFormData: FormData = {
     primerApellido: '',
     segundoApellido: '',
     email: '',
-    numeroContacto: ''
+    numeroContacto: '',
+    tipoProyecto: '',
+    titulo: '',
+    descripcion: '',
+    poblacionBeneficiada: '',
+    valorTotal: ''
   },
   datosEntidad: {
     remitenteId: '',
     nombre: '',
     nit: '',
     email: '',
-    telefono: ''
+    telefono: '',
+    tipoProyecto: '',
+    titulo: '',
+    descripcion: '',
+    poblacionBeneficiada: '',
+    valorTotal: ''
   },
   datosOrganizacion: {
     remitenteId: '',
@@ -44,7 +54,12 @@ const initialFormData: FormData = {
     tipoDocumento: 'NIT',
     numeroDocumento: '',
     email: '',
-    numeroContacto: ''
+    numeroContacto: '',
+    tipoProyecto: '',
+    titulo: '',
+    descripcion: '',
+    poblacionBeneficiada: '',
+    valorTotal: ''
   }
 };
 
@@ -135,44 +150,85 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let newValidationState: ValidationState = {};
 
     // Validación según tipo de remitente y paso actual
-    if (formData.tipoRemitente === 'persona' && formData.paso === 1) {
-      // Validar Número de Documento
-      newValidationState.numeroDocumento = validateField(
-        'numeroDocumento',
-        formData.datosPersona?.numeroDocumento,
-        { required: true, pattern: /^\d+$/, minLength: 6, maxLength: 12 }
-      );
+    if (formData.tipoRemitente === 'persona') {
+      if (formData.paso === 1) {
+        // Validar Número de Documento
+        newValidationState.numeroDocumento = validateField(
+          'numeroDocumento',
+          formData.datosPersona?.numeroDocumento,
+          { required: true, pattern: /^\d+$/, minLength: 6, maxLength: 12 }
+        );
 
-      // Validar Nombres
-      newValidationState.nombres = validateField(
-        'nombres',
-        formData.datosPersona?.nombres,
-        { required: true, minLength: 2 }
-      );
+        // Validar Nombres
+        newValidationState.nombres = validateField(
+          'nombres',
+          formData.datosPersona?.nombres,
+          { required: true, minLength: 2 }
+        );
 
-      // Validar Primer Apellido
-      newValidationState.primerApellido = validateField(
-        'primerApellido',
-        formData.datosPersona?.primerApellido,
-        { required: true, minLength: 2 }
-      );
+        // Validar Primer Apellido
+        newValidationState.primerApellido = validateField(
+          'primerApellido',
+          formData.datosPersona?.primerApellido,
+          { required: true, minLength: 2 }
+        );
 
-      // Validar Email
-      newValidationState.email = validateField(
-        'email',
-        formData.datosPersona?.email,
-        { 
-          required: true, 
-          pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
-        }
-      );
+        // Validar Email
+        newValidationState.email = validateField(
+          'email',
+          formData.datosPersona?.email,
+          { 
+            required: true, 
+            pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+          }
+        );
 
-      // Validar Número de Contacto
-      newValidationState.numeroContacto = validateField(
-        'numeroContacto',
-        formData.datosPersona?.numeroContacto,
-        { required: true, pattern: /^\d{10}$/ }
-      );
+        // Validar Número de Contacto
+        newValidationState.numeroContacto = validateField(
+          'numeroContacto',
+          formData.datosPersona?.numeroContacto,
+          { required: true, pattern: /^\d{10}$/ }
+        );
+      } else if (formData.paso === 2) {
+        // Validar Tipo de Proyecto
+        newValidationState.tipoProyecto = validateField(
+          'tipoProyecto',
+          formData.datosPersona?.tipoProyecto,
+          { required: true }
+        );
+
+        // Validar Título
+        newValidationState.titulo = validateField(
+          'titulo',
+          formData.datosPersona?.titulo,
+          { required: true, minLength: 5, maxLength: 100 }
+        );
+
+        // Validar Descripción
+        newValidationState.descripcion = validateField(
+          'descripcion',
+          formData.datosPersona?.descripcion,
+          { required: true, minLength: 10, maxLength: 500 }
+        );
+
+        // Validar Población Beneficiada
+        newValidationState.poblacionBeneficiada = validateField(
+          'poblacionBeneficiada',
+          formData.datosPersona?.poblacionBeneficiada,
+          { required: true }
+        );
+
+        // Validar Valor Total
+        newValidationState.valorTotal = validateField(
+          'valorTotal',
+          formData.datosPersona?.valorTotal,
+          { 
+            required: true, 
+            pattern: /^\d+(\.\d+)?$/ // Permite números enteros o decimales
+          }
+        );
+      }
+      // Puedes añadir validación para paso 3 aquí si lo necesitas
     }
     // Validación para entidades
     else if (formData.tipoRemitente === 'entidad' && formData.paso === 1) {
@@ -207,6 +263,47 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         { required: true, pattern: /^\d{10}$/ }
       );
     }
+
+    else if (formData.tipoRemitente === 'entidad' && formData.paso === 2) {
+      // Validar Tipo de Proyecto
+      newValidationState.tipoProyecto = validateField(
+        'tipoProyecto',
+        formData.datosEntidad?.tipoProyecto,
+        { required: true }
+      );
+    
+      // Validar Título
+      newValidationState.titulo = validateField(
+        'titulo',
+        formData.datosEntidad?.titulo,
+        { required: true, minLength: 5, maxLength: 100 }
+      );
+    
+      // Validar Descripción
+      newValidationState.descripcion = validateField(
+        'descripcion',
+        formData.datosEntidad?.descripcion,
+        { required: true, minLength: 10, maxLength: 500 }
+      );
+    
+      // Validar Población Beneficiada
+      newValidationState.poblacionBeneficiada = validateField(
+        'poblacionBeneficiada',
+        formData.datosEntidad?.poblacionBeneficiada,
+        { required: true }
+      );
+    
+      // Validar Valor Total
+      newValidationState.valorTotal = validateField(
+        'valorTotal',
+        formData.datosEntidad?.valorTotal,
+        { 
+          required: true, 
+          pattern: /^\d+(\.\d+)?$/ // Permite números enteros o decimales
+        }
+      );
+    }
+
     // Validación para organizaciones
     else if (formData.tipoRemitente === 'organizacion' && formData.paso === 1) {
       // Validar Nombre de Organización
@@ -216,7 +313,7 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         { required: true, minLength: 2 }
       );
 
-      // Validar Razón Social (modificar aquí)
+      // Validar Razón Social
       newValidationState.razonOrganizacion = validateField(
         'razonOrganizacion',
         formData.datosOrganizacion?.razonOrganizacion,
@@ -244,7 +341,7 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Agregar validaciones para otros pasos según sea necesario...
 
     // Verificar si todos los campos validados son válidos
-    stepIsValid = Object.values(newValidationState).every(result => result.isValid);
+    stepIsValid = Object.values(newValidationState).every(result => result?.isValid === true);
 
     // Actualizar el estado de validación
     setValidationState(newValidationState);

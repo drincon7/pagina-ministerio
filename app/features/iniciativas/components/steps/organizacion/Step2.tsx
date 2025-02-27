@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { PersonaDataPartial } from '../../../types/formTypes';
 import StepNavigation from '../../StepNavigation';
 import { IniciativaAPI } from '@/services/api/iniciativa';
 
@@ -19,7 +18,7 @@ interface PoblacionObjetivo {
 
 const Step2: React.FC = () => {
   const { formData, updateFormData, validationState } = useFormContext();
-  const datosPersona = formData.datosPersona;
+  const datosOrganizacion = formData.datosOrganizacion;
 
   // Estados para las opciones de los selects
   const [tiposProyecto, setTiposProyecto] = useState<TipoProyecto[]>([]);
@@ -69,8 +68,8 @@ const Step2: React.FC = () => {
       const numericValue = value.replace(/[^0-9]/g, '');
       
       updateFormData({
-        datosPersona: {
-          ...datosPersona,
+        datosOrganizacion: {
+          ...datosOrganizacion,
           [name]: numericValue,
         }
       });
@@ -79,8 +78,8 @@ const Step2: React.FC = () => {
     
     // Para el resto de los campos
     updateFormData({
-      datosPersona: {
-        ...datosPersona,
+      datosOrganizacion: {
+        ...datosOrganizacion,
         [name]: value,
       }
     });
@@ -132,7 +131,7 @@ const Step2: React.FC = () => {
         <select
           id="tipoProyecto"
           name="tipoProyecto"
-          value={datosPersona?.tipoProyecto || ''}
+          value={datosOrganizacion?.tipoProyecto || ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
             validationState.tipoProyecto?.isValid === false ? 'border-red-500' : ''
@@ -160,7 +159,7 @@ const Step2: React.FC = () => {
           type="text"
           id="titulo"
           name="titulo"
-          value={datosPersona?.titulo || ''}
+          value={datosOrganizacion?.titulo || ''}
           onChange={handleChange}
           maxLength={100}
           className={`${inputBaseClass} ${
@@ -173,7 +172,7 @@ const Step2: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.titulo.message}</p>
         )}
         <p className="text-gray-500 text-xs mt-1">
-          {(datosPersona?.titulo?.length || 0)}/100 caracteres
+          {(datosOrganizacion?.titulo?.length || 0)}/100 caracteres
         </p>
       </div>
 
@@ -185,7 +184,7 @@ const Step2: React.FC = () => {
         <textarea
           id="descripcion"
           name="descripcion"
-          value={datosPersona?.descripcion || ''}
+          value={datosOrganizacion?.descripcion || ''}
           onChange={handleChange}
           maxLength={500}
           className={`${inputBaseClass} h-32 resize-none ${
@@ -198,7 +197,7 @@ const Step2: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.descripcion.message}</p>
         )}
         <p className="text-gray-500 text-xs mt-1">
-          {(datosPersona?.descripcion?.length || 0)}/500 caracteres
+          {(datosOrganizacion?.descripcion?.length || 0)}/500 caracteres
         </p>
       </div>
 
@@ -210,7 +209,7 @@ const Step2: React.FC = () => {
         <select
           id="poblacionBeneficiada"
           name="poblacionBeneficiada"
-          value={datosPersona?.poblacionBeneficiada || ''}
+          value={datosOrganizacion?.poblacionBeneficiada || ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
             validationState.poblacionBeneficiada?.isValid === false ? 'border-red-500' : ''
@@ -240,7 +239,7 @@ const Step2: React.FC = () => {
             type="text"
             id="valorTotal"
             name="valorTotal"
-            value={formatCurrency(datosPersona?.valorTotal)}
+            value={formatCurrency(datosOrganizacion?.valorTotal)}
             onChange={handleChange}
             className={`${inputBaseClass} pl-8 ${
               validationState.valorTotal?.isValid === false ? 'border-red-500' : ''

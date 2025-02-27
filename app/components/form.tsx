@@ -1,14 +1,18 @@
 'use client';
 
 import React from 'react';
-import { FormProvider } from '../features/iniciativas/context/FormContext';
+import { FormProvider, useFormContext } from '../features/iniciativas/context/FormContext';
+
+// Importación de los componentes de paso
 import Step1Persona from '../features/iniciativas/components/steps/persona/Step1';
 import Step2Persona from '../features/iniciativas/components/steps/persona/Step2';
-import Step3Persona from '../features/iniciativas/components/steps/persona/Step3'
+import Step3Persona from '../features/iniciativas/components/steps/persona/Step3';
 
 import Step1Entidad from '../features/iniciativas/components/steps/entidad/Step1';
+import Step2Entidad from '../features/iniciativas/components/steps/entidad/Step2';
+
 import Step1Organizacion from '../features/iniciativas/components/steps/organizacion/Step1';
-import { useFormContext } from '../features/iniciativas/context/FormContext';
+import Step2Organizacion from '../features/iniciativas/components/steps/organizacion/Step2';
 
 // Componente interno que maneja la lógica de renderizado de pasos
 const FormularioContenido: React.FC = () => {
@@ -24,6 +28,7 @@ const FormularioContenido: React.FC = () => {
 
   // Renderizado del paso actual según el tipo de remitente
   const renderPasoActual = () => {
+    // Primero verificamos el tipo de remitente
     if (formData.tipoRemitente === 'persona') {
       switch (formData.paso) {
         case 1:
@@ -35,17 +40,30 @@ const FormularioContenido: React.FC = () => {
         default:
           return <Step1Persona />;
       }
+    } else if (formData.tipoRemitente === 'entidad') {
+      // Para entidad, también verificamos el paso
+      switch (formData.paso) {
+        case 1:
+          return <Step1Entidad />;
+        case 2:
+          return <Step2Entidad />;
+        default:
+          return <Step1Entidad />;
+      }
+    } else if (formData.tipoRemitente === 'organizacion') {
+      // Para organización, también verificamos el paso
+      switch (formData.paso) {
+        case 1:
+          return <Step1Organizacion />;
+        case 2:
+          // Temporalmente reusamos Step1 hasta que tengas Step2
+          return <Step2Organizacion />;
+        default:
+          return <Step1Organizacion />;
+      }
     }
-  
-    // Para otros tipos de remitente
-    switch (formData.tipoRemitente) {
-      case 'entidad':
-        return <Step1Entidad />;
-      case 'organizacion':
-        return <Step1Organizacion />;
-      default:
-        return null;
-    }
+    
+    return null; // En caso de que ninguna condición se cumpla
   };
 
   return (
@@ -80,7 +98,6 @@ const FormularioContenido: React.FC = () => {
         </div>
       </div>
       
-
       {/* Contenido del formulario */}
       <div className="bg-white rounded-lg border border-pink-200 p-6">
         <h2 className="text-2xl font-bold text-pink-500 mb-6">
@@ -132,7 +149,7 @@ const FormularioContenido: React.FC = () => {
         )}
 
         {/* Renderizado del paso actual */}
-        {renderPasoActual()}        
+        {renderPasoActual()}
       </div>
     </div>
   );

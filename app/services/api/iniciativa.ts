@@ -1,6 +1,6 @@
 // @/services/api/iniciativa.ts
 import api from '@/services/api/config';
-import { Iniciativa, IniciativaResponse } from '@/services/api/types/iniciativa';
+import { Iniciativa, IniciativaResponse, TipoProyecto, PoblacionObjetivo } from '@/services/types/iniciativa';
 
 // Ruta base correcta según urls.py
 const INICIATIVA_BASE_PATH = 'mie/api/iniciativas';
@@ -84,6 +84,36 @@ export const IniciativaAPI = {
       console.error('Error al eliminar iniciativa:', error);
       throw error;
     }
+  },
+
+  /**
+   * Obtener todos los tipos de proyecto para una entidad específica
+   * @param entidadId ID de la entidad
+   */
+  findAllTiposProyecto: async (entidadId: string | number): Promise<TipoProyecto[]> => {
+    try {
+      // Usar el endpoint correcto basado en las URLs de tu backend
+      const response = await api.get<{ data: TipoProyecto[] }>(`mie/api/tipo-proyecto/${entidadId}`);
+      return response.data.data || [];
+    } catch (error: unknown) {
+      console.error('Error al obtener tipos de proyecto:', error);
+      throw error;
+    }
+  },
+
+ /**
+ * Obtener todas las poblaciones objetivo para una entidad específica
+ * @param entidadId ID de la entidad
+ */
+findAllPoblacionesObjetivo: async (entidadId: string | number): Promise<PoblacionObjetivo[]> => {
+  try {
+    // Usar el endpoint correcto basado en las URLs de tu backend
+    const response = await api.get<{ data: PoblacionObjetivo[] }>(`mie/api/poblacion-objetivo/${entidadId}`);
+    return response.data.data || [];
+  } catch (error: unknown) {
+    console.error('Error al obtener poblaciones objetivo:', error);
+    throw error;
+  }
   }
 };
 
