@@ -2,8 +2,7 @@ import Image from "next/image";
 import Header from "./components/header";
 import Footer from "./components/footer";
 import FormularioIniciativas from "./components/form";
-
-
+import IniciativasDashboard from "./components/iniciativasDashboard";
 
 export default function Home() {
   return (
@@ -18,7 +17,7 @@ export default function Home() {
           className="object-cover"
         />
       </div>
-      <FormularioIniciativas />
+      <IniciativasDashboard />
       <Footer />
     </>
   );
