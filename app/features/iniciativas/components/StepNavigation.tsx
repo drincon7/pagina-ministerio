@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../context/FormContext';
 import { RemitenteAPI } from '@/services/api/remitente';
+import { IniciativaAPI } from '@/services/api/iniciativa';
+import { useFormStorage } from '../hooks/useFormStorage';
 
 /**
  * Componente de navegación entre pasos del formulario
@@ -18,47 +20,193 @@ const StepNavigation: React.FC = () => {
     validationState
   } = useFormContext();
   
+  // Usar el hook de almacenamiento para persistencia automática
+  const { saveFormToStorage, clearFormStorage } = useFormStorage(formData, updateFormData);
+  
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
 
   // Loguear información relevante solo cuando cambia el paso
   useEffect(() => {
     console.log('Step Navigation - Current Step:', formData.paso);
     console.log('Is Step Valid:', isCurrentStepValid);
     console.log('Tipo de Remitente:', formData.tipoRemitente);
-  }, [formData.paso, isCurrentStepValid, formData.tipoRemitente]);
+    
+    // Guardar en localStorage cuando cambia el paso
+    saveFormToStorage();
+  }, [formData.paso, isCurrentStepValid, formData.tipoRemitente, saveFormToStorage]);
 
   /**
    * Guarda los datos del paso actual en la API
    * @returns Promise<boolean> - True si se guardó correctamente, false en caso contrario
    */
   const saveCurrentStepData = async (): Promise<boolean> => {
-    // Si no estamos en el primer paso, simplemente continuamos
-    if (formData.paso !== 1) {
-      return true;
-    }
-
     setLoading(true);
     setError(null);
-    setApiStatus('Guardando datos...');
 
     try {
-      // Manejo según tipo de remitente
-      if (formData.tipoRemitente === 'persona') {
-        return await handlePersonaData();
+      // Determinar qué guardar según el paso actual
+      if (formData.paso === 1) {
+        setApiStatus('Guardando datos del remitente...');
+        
+        // Manejo según tipo de remitente
+        if (formData.tipoRemitente === 'persona') {
+          return await handlePersonaData();
+        } 
+        else if (formData.tipoRemitente === 'entidad') {
+          return await handleEntidadData();
+        } 
+        else if (formData.tipoRemitente === 'organizacion') {
+          return await handleOrganizacionData();
+        }
       } 
-      else if (formData.tipoRemitente === 'entidad') {
-        return await handleEntidadData();
-      } 
-      else if (formData.tipoRemitente === 'organizacion') {
-        return await handleOrganizacionData();
+      else if (formData.paso === 2) {
+        setApiStatus('Guardando datos de la iniciativa...');
+        return await handleIniciativaData();
       }
       
+      // Si no es un paso que requiera guardar datos
       setLoading(false);
       return true;
     } catch (err: unknown) {
       return handleError(err);
+    }
+  };
+
+  /**
+   * Maneja el envío de datos de iniciativa
+   */
+  const handleIniciativaData = async (): Promise<boolean> => {
+    try {
+      // Determinar tipo de remitente y preparar datos para API
+      let iniciativaData;
+      let remitenteId;
+      
+      if (formData.tipoRemitente === 'persona') {
+        // Verificar campos requeridos para persona
+        const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+        if (!validateRequiredFields(requiredFields)) return false;
+        
+        remitenteId = formData.datosPersona?.remitenteId;
+        if (!remitenteId) {
+          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
+          setLoading(false);
+          return false;
+        }
+        
+        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
+        iniciativaData = {
+          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
+          radicado_por: parseInt(remitenteId),
+          tipo_proyecto: formData.datosPersona?.tipoProyecto || '',
+          titulo: formData.datosPersona?.titulo || '',
+          descripcion: formData.datosPersona?.descripcion || '',
+          poblacion_beneficiada: formData.datosPersona?.poblacionBeneficiada || '',
+          valor_total: formData.datosPersona?.valorTotal || '',
+          creado_desde: 'persona',
+          radicado: null // Enviar null para que el backend genere automáticamente
+        };
+      } 
+      else if (formData.tipoRemitente === 'entidad') {
+        // Verificar campos requeridos para entidad
+        const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+        if (!validateRequiredFields(requiredFields)) return false;
+        
+        remitenteId = formData.datosEntidad?.remitenteId;
+        if (!remitenteId) {
+          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
+          setLoading(false);
+          return false;
+        }
+        
+        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
+        iniciativaData = {
+          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
+          radicado_por: parseInt(remitenteId),
+          tipo_proyecto: formData.datosEntidad?.tipoProyecto || '',
+          titulo: formData.datosEntidad?.titulo || '',
+          descripcion: formData.datosEntidad?.descripcion || '',
+          poblacion_beneficiada: formData.datosEntidad?.poblacionBeneficiada || '',
+          valor_total: formData.datosEntidad?.valorTotal || '',
+          creado_desde: 'entidad',
+          radicado: null // Enviar null para que el backend genere automáticamente
+        };
+      }
+      else if (formData.tipoRemitente === 'organizacion') {
+        // Verificar campos requeridos para organización
+        const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+        if (!validateRequiredFields(requiredFields)) return false;
+        
+        remitenteId = formData.datosOrganizacion?.remitenteId;
+        if (!remitenteId) {
+          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
+          setLoading(false);
+          return false;
+        }
+        
+        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
+        iniciativaData = {
+          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
+          radicado_por: parseInt(remitenteId),
+          tipo_proyecto: formData.datosOrganizacion?.tipoProyecto || '',
+          titulo: formData.datosOrganizacion?.titulo || '',
+          descripcion: formData.datosOrganizacion?.descripcion || '',
+          poblacion_beneficiada: formData.datosOrganizacion?.poblacionBeneficiada || '',
+          valor_total: formData.datosOrganizacion?.valorTotal || '',
+          creado_desde: 'organizacion',
+          radicado: null // Enviar null para que el backend genere automáticamente
+        };
+      } else {
+        setError('Tipo de remitente no válido');
+        setLoading(false);
+        return false;
+      }
+      
+      // Enviar datos al API
+      const response = await IniciativaAPI.create(iniciativaData);
+      
+      // Manejar la respuesta según el tipo de remitente
+      setApiStatus('¡Datos de la iniciativa guardados correctamente!');
+      console.log('Iniciativa creada:', response);
+      
+      if (response && response.id) {
+        if (formData.tipoRemitente === 'persona') {
+          updateFormData({
+            datosPersona: {
+              ...formData.datosPersona,
+              iniciativaId: response.id.toString(),
+              radicado: response.radicado
+            }
+          });
+        } else if (formData.tipoRemitente === 'entidad') {
+          updateFormData({
+            datosEntidad: {
+              ...formData.datosEntidad,
+              iniciativaId: response.id.toString(),
+              radicado: response.radicado
+            }
+          });
+        } else if (formData.tipoRemitente === 'organizacion') {
+          updateFormData({
+            datosOrganizacion: {
+              ...formData.datosOrganizacion,
+              iniciativaId: response.id.toString(),
+              radicado: response.radicado
+            }
+          });
+        }
+        
+        // Guardar explícitamente en localStorage después de recibir la respuesta
+        saveFormToStorage();
+      }
+      
+      setSuccess(true);
+      setLoading(false);
+      return true;
+    } catch (error) {
+      return handleError(error);
     }
   };
 
@@ -92,13 +240,16 @@ const StepNavigation: React.FC = () => {
       console.log('Datos de persona enviados:', response);
       
       // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.id && !formData.datosPersona?.remitenteId) {
+      if (response && response.data && response.data.id && !formData.datosPersona?.remitenteId) {
         updateFormData({
           datosPersona: {
             ...formData.datosPersona,
-            remitenteId: response.id.toString()
+            remitenteId: response.data.id.toString()
           }
         });
+        
+        // Guardar explícitamente en localStorage después de recibir la respuesta
+        saveFormToStorage();
       }
       
       setLoading(false);
@@ -135,13 +286,16 @@ const StepNavigation: React.FC = () => {
       console.log('Datos de entidad enviados:', response);
       
       // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.id && !formData.datosEntidad?.remitenteId) {
+      if (response && response.data && response.data.id && !formData.datosEntidad?.remitenteId) {
         updateFormData({
           datosEntidad: {
             ...formData.datosEntidad,
-            remitenteId: response.id.toString()
+            remitenteId: response.data.id.toString()
           }
         });
+        
+        // Guardar explícitamente en localStorage después de recibir la respuesta
+        saveFormToStorage();
       }
       
       setLoading(false);
@@ -178,13 +332,16 @@ const StepNavigation: React.FC = () => {
       console.log('Datos de organización enviados:', response);
       
       // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.id && !formData.datosOrganizacion?.remitenteId) {
+      if (response && response.data && response.data.id && !formData.datosOrganizacion?.remitenteId) {
         updateFormData({
           datosOrganizacion: {
             ...formData.datosOrganizacion,
-            remitenteId: response.id.toString()
+            remitenteId: response.data.id.toString()
           }
         });
+        
+        // Guardar explícitamente en localStorage después de recibir la respuesta
+        saveFormToStorage();
       }
       
       setLoading(false);
@@ -223,6 +380,8 @@ const StepNavigation: React.FC = () => {
     if (err && typeof err === 'object' && 'response' in err) {
       const apiError = err as { response?: { data?: { message?: string } } };
       setError(apiError.response?.data?.message || 'Error al enviar los datos');
+    } else if (err instanceof Error) {
+      setError(err.message || 'Error al procesar la solicitud');
     } else {
       setError('Error al procesar la solicitud');
     }
@@ -244,6 +403,7 @@ const StepNavigation: React.FC = () => {
 
     // Si el paso actual no es válido, no continuamos
     if (!isCurrentStepValid) {
+      setError('Por favor complete todos los campos correctamente antes de continuar');
       return;
     }
 
@@ -256,6 +416,8 @@ const StepNavigation: React.FC = () => {
       setApiStatus('');
       setError(null);
       nextStep();
+      
+      // Los datos se guardarán automáticamente en localStorage gracias al efecto
     }
   };
 
@@ -271,6 +433,8 @@ const StepNavigation: React.FC = () => {
     setApiStatus('');
     setError(null);
     prevStep();
+    
+    // Los datos se guardarán automáticamente en localStorage gracias al efecto
   };
 
   /**
@@ -284,7 +448,54 @@ const StepNavigation: React.FC = () => {
       // Aquí puedes implementar la lógica de envío final del formulario
       console.log('Formulario completado:', formData);
       setApiStatus('¡Formulario enviado con éxito!');
-      // Ejemplo: llamada a API, redirección, etc.
+      setSuccess(true);
+      
+      // Cuando se completa el formulario, se podría mostrar un modal de confirmación
+      // o redirigir a una página de éxito
+      const completadoMensaje = formData.tipoRemitente === 'persona' && formData.datosPersona?.radicado
+        ? `Iniciativa registrada con éxito. Su número de radicado es: ${formData.datosPersona.radicado}`
+        : formData.tipoRemitente === 'entidad' && formData.datosEntidad?.radicado
+        ? `Iniciativa registrada con éxito. Su número de radicado es: ${formData.datosEntidad.radicado}`
+        : formData.tipoRemitente === 'organizacion' && formData.datosOrganizacion?.radicado
+        ? `Iniciativa registrada con éxito. Su número de radicado es: ${formData.datosOrganizacion.radicado}`
+        : 'Iniciativa registrada con éxito';
+        
+      // Mostrar alerta con el número de radicado
+      setTimeout(() => {
+        alert(completadoMensaje);
+        
+        // Preguntar si desea registrar otra iniciativa
+        const registrarOtra = confirm("¿Desea registrar otra iniciativa?");
+        
+        if (registrarOtra) {
+          // Limpiar formulario pero conservar datos del remitente
+          const tipoRemitente = formData.tipoRemitente;
+          let remitenteId = '';
+          
+          if (tipoRemitente === 'persona' && formData.datosPersona?.remitenteId) {
+            remitenteId = formData.datosPersona.remitenteId;
+          } else if (tipoRemitente === 'entidad' && formData.datosEntidad?.remitenteId) {
+            remitenteId = formData.datosEntidad.remitenteId;
+          } else if (tipoRemitente === 'organizacion' && formData.datosOrganizacion?.remitenteId) {
+            remitenteId = formData.datosOrganizacion.remitenteId;
+          }
+          
+          // Reset formulario pero conservar tipo y remitente
+          updateFormData({
+            paso: 1,
+            tipoRemitente,
+            datosPersona: tipoRemitente === 'persona' ? { remitenteId } : undefined,
+            datosEntidad: tipoRemitente === 'entidad' ? { remitenteId } : undefined,
+            datosOrganizacion: tipoRemitente === 'organizacion' ? { remitenteId } : undefined
+          });
+          
+          setSuccess(false);
+        } else {
+          // Si no quiere registrar otra, limpiar todo
+          clearFormStorage();
+          // Aquí podrías redirigir a una página de inicio o de confirmación
+        }
+      }, 500);
     }
   };
 
@@ -322,6 +533,23 @@ const StepNavigation: React.FC = () => {
           >
             Cerrar
           </button>
+        </div>
+      )}
+
+      {/* Mensaje de éxito cuando se completa el formulario */}
+      {success && (
+        <div className="p-4 bg-green-100 text-green-800 rounded-md mb-4">
+          <p className="font-bold text-lg">¡Iniciativa registrada con éxito!</p>
+          {formData.tipoRemitente === 'persona' && formData.datosPersona?.radicado && (
+            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosPersona.radicado}</span></p>
+          )}
+          {formData.tipoRemitente === 'entidad' && formData.datosEntidad?.radicado && (
+            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosEntidad.radicado}</span></p>
+          )}
+          {formData.tipoRemitente === 'organizacion' && formData.datosOrganizacion?.radicado && (
+            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosOrganizacion.radicado}</span></p>
+          )}
+          <p className="mt-1 text-sm">Por favor guarde este número para futuras consultas.</p>
         </div>
       )}
 
