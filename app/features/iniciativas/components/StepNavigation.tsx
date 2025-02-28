@@ -17,26 +17,54 @@ const StepNavigation: React.FC = () => {
     nextStep, 
     prevStep,
     isCurrentStepValid,
+    validateCurrentStep,
     validationState
   } = useFormContext();
   
-  // Usar el hook de almacenamiento para persistencia automática
-  const { saveFormToStorage, clearFormStorage } = useFormStorage(formData, updateFormData);
-  
+  // Estados locales para controlar UI
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
 
-  // Loguear información relevante solo cuando cambia el paso
+  // Loguear información relevante solo cuando cambia el paso o validación
   useEffect(() => {
     console.log('Step Navigation - Current Step:', formData.paso);
     console.log('Is Step Valid:', isCurrentStepValid);
     console.log('Tipo de Remitente:', formData.tipoRemitente);
+    console.log('Validation State:', validationState);
+  }, [formData.paso, isCurrentStepValid, formData.tipoRemitente, validationState]);
+
+  /**
+   * Comprueba si los campos requeridos están presentes y son válidos
+   * @returns boolean - Verdadero si todos los campos son válidos
+   */
+  const validateRequiredFields = (fields: string[]): boolean => {
+    console.log('Validando campos:', fields);
     
-    // Guardar en localStorage cuando cambia el paso
-    saveFormToStorage();
-  }, [formData.paso, isCurrentStepValid, formData.tipoRemitente, saveFormToStorage]);
+    // Forzar validación actual antes de verificar campos
+    const isValid = validateCurrentStep();
+    
+    if (!isValid) {
+      let mensajeError = 'Por favor complete todos los campos obligatorios correctamente';
+      
+      // Revisar si hay mensajes específicos de error para mostrar
+      const camposConError = fields.filter(field => 
+        !validationState[field]?.isValid && validationState[field]?.message
+      );
+      
+      if (camposConError.length > 0) {
+        const primerCampoError = camposConError[0];
+        mensajeError = validationState[primerCampoError]?.message || mensajeError;
+      }
+      
+      setError(mensajeError);
+      setLoading(false);
+      return false;
+    }
+    
+    return true;
+  };
 
   /**
    * Guarda los datos del paso actual en la API
@@ -84,6 +112,7 @@ const StepNavigation: React.FC = () => {
       let iniciativaData;
       let remitenteId;
       
+      // Validar campos según tipo de remitente
       if (formData.tipoRemitente === 'persona') {
         // Verificar campos requeridos para persona
         const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
@@ -197,9 +226,6 @@ const StepNavigation: React.FC = () => {
             }
           });
         }
-        
-        // Guardar explícitamente en localStorage después de recibir la respuesta
-        saveFormToStorage();
       }
       
       setSuccess(true);
@@ -247,9 +273,6 @@ const StepNavigation: React.FC = () => {
             remitenteId: response.data.id.toString()
           }
         });
-        
-        // Guardar explícitamente en localStorage después de recibir la respuesta
-        saveFormToStorage();
       }
       
       setLoading(false);
@@ -293,9 +316,6 @@ const StepNavigation: React.FC = () => {
             remitenteId: response.data.id.toString()
           }
         });
-        
-        // Guardar explícitamente en localStorage después de recibir la respuesta
-        saveFormToStorage();
       }
       
       setLoading(false);
@@ -339,9 +359,6 @@ const StepNavigation: React.FC = () => {
             remitenteId: response.data.id.toString()
           }
         });
-        
-        // Guardar explícitamente en localStorage después de recibir la respuesta
-        saveFormToStorage();
       }
       
       setLoading(false);
@@ -349,23 +366,6 @@ const StepNavigation: React.FC = () => {
     } catch (error) {
       return handleError(error);
     }
-  };
-
-  /**
-   * Valida que todos los campos requeridos sean válidos
-   * @param fields Array de nombres de campos a validar
-   * @returns boolean - True si todos los campos son válidos
-   */
-  const validateRequiredFields = (fields: string[]): boolean => {
-    const allValid = fields.every(field => validationState[field]?.isValid === true);
-
-    if (!allValid) {
-      setError('Por favor complete todos los campos obligatorios correctamente');
-      setLoading(false);
-      return false;
-    }
-    
-    return true;
   };
 
   /**
@@ -401,8 +401,11 @@ const StepNavigation: React.FC = () => {
       tipoRemitente: formData.tipoRemitente
     });
 
+    // Forzar validación antes de continuar
+    const stepValid = validateCurrentStep();
+    
     // Si el paso actual no es válido, no continuamos
-    if (!isCurrentStepValid) {
+    if (!stepValid) {
       setError('Por favor complete todos los campos correctamente antes de continuar');
       return;
     }
@@ -416,8 +419,6 @@ const StepNavigation: React.FC = () => {
       setApiStatus('');
       setError(null);
       nextStep();
-      
-      // Los datos se guardarán automáticamente en localStorage gracias al efecto
     }
   };
 
@@ -433,8 +434,6 @@ const StepNavigation: React.FC = () => {
     setApiStatus('');
     setError(null);
     prevStep();
-    
-    // Los datos se guardarán automáticamente en localStorage gracias al efecto
   };
 
   /**
@@ -442,6 +441,13 @@ const StepNavigation: React.FC = () => {
    */
   const handleSubmit = async () => {
     // Validar y guardar el último paso
+    const stepValid = validateCurrentStep();
+    
+    if (!stepValid) {
+      setError('Por favor complete todos los campos correctamente antes de enviar');
+      return;
+    }
+    
     const saveSuccess = await saveCurrentStepData();
     
     if (saveSuccess) {
@@ -492,7 +498,6 @@ const StepNavigation: React.FC = () => {
           setSuccess(false);
         } else {
           // Si no quiere registrar otra, limpiar todo
-          clearFormStorage();
           // Aquí podrías redirigir a una página de inicio o de confirmación
         }
       }, 500);
@@ -576,6 +581,7 @@ const StepNavigation: React.FC = () => {
                 : "bg-pink-300 text-white cursor-not-allowed"
             }`}
             aria-label="Continuar al siguiente paso"
+            type="button"
           >
             {loading ? "Procesando..." : "Siguiente"}
           </button>
@@ -589,6 +595,7 @@ const StepNavigation: React.FC = () => {
                 : "bg-pink-300 text-white cursor-not-allowed"
             }`}
             aria-label="Finalizar el formulario"
+            type="button"
           >
             {loading ? "Procesando..." : "Finalizar y enviar"}
           </button>

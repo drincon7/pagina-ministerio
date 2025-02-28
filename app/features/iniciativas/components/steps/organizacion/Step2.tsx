@@ -17,7 +17,7 @@ interface PoblacionObjetivo {
 }
 
 const Step2: React.FC = () => {
-  const { formData, updateFormData, validationState } = useFormContext();
+  const { formData, updateFormData, validationState, validateCurrentStep } = useFormContext();
   const datosOrganizacion = formData.datosOrganizacion;
 
   // Estados para las opciones de los selects
@@ -61,6 +61,23 @@ const Step2: React.FC = () => {
     
     fetchOptions();
   }, []);
+
+  // Validar los campos cuando cambian
+  useEffect(() => {
+    // Forzar la validación cada vez que cambia algún valor
+    const timeoutId = setTimeout(() => {
+      validateCurrentStep();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [
+    datosOrganizacion?.tipoProyecto,
+    datosOrganizacion?.titulo,
+    datosOrganizacion?.descripcion,
+    datosOrganizacion?.poblacionBeneficiada,
+    datosOrganizacion?.valorTotal,
+    validateCurrentStep
+  ]);
 
   // Función para formatear el valor como moneda
   const formatCurrency = (value: string | undefined): string => {
@@ -135,10 +152,12 @@ const Step2: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-xl font-bold text-gray-800 mb-6">Datos de la iniciativa</h2>
+      
       {/* Tipo de proyecto */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="tipoProyecto">
-          Tipo de proyecto
+          Tipo de proyecto<span className="text-red-500">*</span>
         </label>
         <select
           id="tipoProyecto"
@@ -146,7 +165,7 @@ const Step2: React.FC = () => {
           value={datosOrganizacion?.tipoProyecto || ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
-            validationState.tipoProyecto?.isValid === false ? 'border-red-500' : ''
+            validationState.tipoProyecto?.isValid === false ? 'border-red-500 ring-1 ring-red-500' : ''
           }`}
           required
         >
@@ -157,7 +176,7 @@ const Step2: React.FC = () => {
             </option>
           ))}
         </select>
-        {validationState.tipoProyecto?.message && (
+        {validationState.tipoProyecto?.isValid === false && validationState.tipoProyecto?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.tipoProyecto.message}</p>
         )}
       </div>
@@ -165,7 +184,7 @@ const Step2: React.FC = () => {
       {/* Título de la iniciativa */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="titulo">
-          Título de la iniciativa
+          Título de la iniciativa<span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -175,12 +194,12 @@ const Step2: React.FC = () => {
           onChange={handleChange}
           maxLength={100}
           className={`${inputBaseClass} ${
-            validationState.titulo?.isValid === false ? 'border-red-500' : ''
+            validationState.titulo?.isValid === false ? 'border-red-500 ring-1 ring-red-500' : ''
           }`}
           placeholder="Campo de texto (máximo 100 caracteres)"
           required
         />
-        {validationState.titulo?.message && (
+        {validationState.titulo?.isValid === false && validationState.titulo?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.titulo.message}</p>
         )}
         <p className="text-gray-500 text-xs mt-1">
@@ -191,7 +210,7 @@ const Step2: React.FC = () => {
       {/* Descripción de la iniciativa */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="descripcion">
-          Descripción de la iniciativa
+          Descripción de la iniciativa<span className="text-red-500">*</span>
         </label>
         <textarea
           id="descripcion"
@@ -200,12 +219,12 @@ const Step2: React.FC = () => {
           onChange={handleChange}
           maxLength={500}
           className={`${inputBaseClass} h-32 resize-none ${
-            validationState.descripcion?.isValid === false ? 'border-red-500' : ''
+            validationState.descripcion?.isValid === false ? 'border-red-500 ring-1 ring-red-500' : ''
           }`}
           placeholder="Área de texto para resumir la iniciativa (máximo 500 caracteres)"
           required
         />
-        {validationState.descripcion?.message && (
+        {validationState.descripcion?.isValid === false && validationState.descripcion?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.descripcion.message}</p>
         )}
         <p className="text-gray-500 text-xs mt-1">
@@ -216,7 +235,7 @@ const Step2: React.FC = () => {
       {/* Población beneficiada */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="poblacionBeneficiada">
-          Población beneficiada
+          Población beneficiada<span className="text-red-500">*</span>
         </label>
         <select
           id="poblacionBeneficiada"
@@ -224,7 +243,7 @@ const Step2: React.FC = () => {
           value={datosOrganizacion?.poblacionBeneficiada || ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
-            validationState.poblacionBeneficiada?.isValid === false ? 'border-red-500' : ''
+            validationState.poblacionBeneficiada?.isValid === false ? 'border-red-500 ring-1 ring-red-500' : ''
           }`}
           required
         >
@@ -235,7 +254,7 @@ const Step2: React.FC = () => {
             </option>
           ))}
         </select>
-        {validationState.poblacionBeneficiada?.message && (
+        {validationState.poblacionBeneficiada?.isValid === false && validationState.poblacionBeneficiada?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.poblacionBeneficiada.message}</p>
         )}
       </div>
@@ -243,7 +262,7 @@ const Step2: React.FC = () => {
       {/* Valor total */}
       <div className="mb-6">
         <label className={labelBaseClass} htmlFor="valorTotal">
-          Valor total
+          Valor total<span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <span className="absolute left-3 top-2 text-gray-500">$</span>
@@ -255,13 +274,13 @@ const Step2: React.FC = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             className={`${inputBaseClass} pl-8 ${
-              validationState.valorTotal?.isValid === false ? 'border-red-500' : ''
+              validationState.valorTotal?.isValid === false ? 'border-red-500 ring-1 ring-red-500' : ''
             }`}
             placeholder="Valor en pesos COP"
             required
           />
         </div>
-        {validationState.valorTotal?.message && (
+        {validationState.valorTotal?.isValid === false && validationState.valorTotal?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.valorTotal.message}</p>
         )}
       </div>
