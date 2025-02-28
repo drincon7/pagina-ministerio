@@ -11,6 +11,20 @@ export interface ValidationState {
   [key: string]: ValidationResult | undefined;
 }
 
+// Interfaces para documentos
+export interface DocumentoMetadata {
+  nombre: string;
+  tipo: string;
+  tamaño: number;
+}
+
+export interface Documentos {
+  cartaPresentacion?: DocumentoMetadata | null;
+  anexoTecnico?: DocumentoMetadata | null;
+  mgaNacional?: DocumentoMetadata | null;
+  [key: string]: DocumentoMetadata | null | undefined;
+}
+
 // Datos parciales para persona
 export interface PersonaDataPartial {
   remitenteId?: string;
@@ -28,6 +42,7 @@ export interface PersonaDataPartial {
   descripcion?: string;
   poblacionBeneficiada?: string;
   valorTotal?: string;
+  documentos?: Documentos; // Añadido para documentos
 }
 
 // Datos parciales para entidad
@@ -44,6 +59,7 @@ export interface EntidadDataPartial {
   descripcion?: string;
   poblacionBeneficiada?: string;
   valorTotal?: string;
+  documentos?: Documentos; // Añadido para documentos
 }
 
 // Datos parciales para organización
@@ -62,6 +78,7 @@ export interface OrganizacionDataPartial {
   descripcion?: string;
   poblacionBeneficiada?: string;
   valorTotal?: string;
+  documentos?: Documentos; // Añadido para documentos
 }
 
 // Estructura completa de datos del formulario

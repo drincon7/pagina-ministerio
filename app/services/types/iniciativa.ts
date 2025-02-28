@@ -85,3 +85,9 @@ export interface IniciativaUpdateDTO {
   valor_total?: number;
   tipo_proyecto?: number;
 }
+export interface DocumentoMetadata {
+    id: number;
+    nombre_archivo: string;
+    subido: boolean;
+    obligatorio: boolean;
+  }

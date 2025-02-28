@@ -22,6 +22,7 @@ export const useFormValidation = () => {
 
   return {
     validationState,
+    setValidationState, // Exponer setValidationState para que Step3 pueda actualizar la validación
     isCurrentStepValid,
     validateCurrentStep,
   };

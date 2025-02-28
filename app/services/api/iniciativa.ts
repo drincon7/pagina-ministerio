@@ -125,6 +125,20 @@ export const IniciativaAPI = {
     }
   },
 
+    /**
+     * Obtener todos los documentos de una iniciativa
+     * @param iniciativaId ID de la iniciativa
+     */
+    getDocuments: async (iniciativaId: number): Promise<any[]> => {
+        try {
+          const response = await api.get(`${INICIATIVA_BASE_PATH}/${iniciativaId}/documentos/`);
+          return response.data || [];
+        } catch (error: unknown) {
+          console.error('Error al obtener documentos:', error);
+          return []; // Retornar array vacío en caso de error para no romper el flujo
+        }
+      },
+    
   /**
    * Subir un documento asociado a una iniciativa
    * @param iniciativaId ID de la iniciativa
