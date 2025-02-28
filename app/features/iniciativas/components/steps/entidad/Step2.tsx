@@ -2,102 +2,130 @@
 
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { EntidadDataPartial } from '../../../types/formTypes';
 import StepNavigation from '../../StepNavigation';
-import { TipoProyecto, PoblacionObjetivo } from '@/services/types/iniciativa';
 import { IniciativaAPI } from '@/services/api/iniciativa';
+
+// Interfaces para los datos que vienen de la API
+interface TipoProyecto {
+  id: number;
+  tipo_proyecto: string;
+}
+
+interface PoblacionObjetivo {
+  id: number;
+  poblacion_objetivo: string;
+}
 
 const Step2: React.FC = () => {
   const { formData, updateFormData, validationState } = useFormContext();
-  const datosEntidad = formData.datosEntidad as EntidadDataPartial;
-  
-  // Estados para almacenar las opciones obtenidas desde la API
-  const [tiposProyectos, setTiposProyectos] = useState<TipoProyecto[]>([]);
+  const datosEntidad = formData.datosEntidad;
+
+  // Estados para las opciones de los selects
+  const [tiposProyecto, setTiposProyecto] = useState<TipoProyecto[]>([]);
   const [poblacionesObjetivo, setPoblacionesObjetivo] = useState<PoblacionObjetivo[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Obtener datos de la API al montar el componente
-  useEffect(() => {
-    const fetchOptionsData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Obtener tipos de proyectos desde la API
-        const tiposProyectoData = await IniciativaAPI.findAllTiposProyecto();
-        setTiposProyectos(tiposProyectoData);
-        
-        // Obtener poblaciones objetivo desde la API
-        const poblacionesObjetivoData = await IniciativaAPI.findAllPoblacionesObjetivo();
-        setPoblacionesObjetivo(poblacionesObjetivoData);
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error al cargar opciones:', err);
-        setError('Error al cargar opciones. Por favor, recargue la página.');
-        setLoading(false);
-      }
-    };
-    
-    fetchOptionsData();
-  }, []);
+
+  // Estado local para mantener el valor sin formatear durante la edición
+  const [valorTotalRaw, setValorTotalRaw] = useState<string>(datosEntidad?.valorTotal || '');
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
+  // Cargar las opciones desde la API al montar el componente
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Obtener el ID de la entidad desde variables de entorno
+        const entidadId = process.env.NEXT_PUBLIC_ENTIDAD_ID || '1';
+        
+        // Cargar tipos de proyecto
+        const tiposResponse = await IniciativaAPI.findAllTiposProyecto(entidadId);
+        setTiposProyecto(tiposResponse);
+        
+        // Cargar poblaciones objetivo
+        const poblacionesResponse = await IniciativaAPI.findAllPoblacionesObjetivo(entidadId);
+        setPoblacionesObjetivo(poblacionesResponse);
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error al cargar opciones:', err);
+        setError('No se pudieron cargar los datos. Por favor, recargue la página.');
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOptions();
+  }, []);
+
+  // Función para formatear el valor como moneda
+  const formatCurrency = (value: string | undefined): string => {
+    if (!value) return '';
+    
+    // Eliminar caracteres no numéricos
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Formatear con separador de miles
+    return new Intl.NumberFormat('es-CO').format(parseInt(numericValue) || 0);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    const updatedEntidadData: Partial<EntidadDataPartial> = {
-      ...datosEntidad,
-      [name]: value,
-    };
-
+    // Procesamiento especial para el valor total (solo permitir números)
+    if (name === 'valorTotal') {
+      // Eliminar cualquier carácter que no sea un número
+      const numericValue = value.replace(/[^0-9]/g, '');
+      setValorTotalRaw(numericValue);
+      
+      updateFormData({
+        datosEntidad: {
+          ...datosEntidad,
+          [name]: numericValue,
+        }
+      });
+      return;
+    }
+    
+    // Para el resto de los campos
     updateFormData({
-      datosEntidad: updatedEntidadData
+      datosEntidad: {
+        ...datosEntidad,
+        [name]: value,
+      }
     });
   };
 
-  // Formatear valor numérico para mostrar en formato de moneda
-  const formatCurrency = (value: string) => {
-    // Eliminar caracteres no numéricos excepto el punto
-    const numericValue = value.replace(/[^\d.]/g, '');
-    
-    // Formatear con separadores de miles
-    return numericValue ? new Intl.NumberFormat('es-CO').format(parseFloat(numericValue)) : '';
+  // Al perder el foco, formatear el valor y actualizar el estado local
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.name === 'valorTotal') {
+      const formatted = formatCurrency(valorTotalRaw);
+      setValorTotalRaw(formatted);
+    }
   };
 
-  // Manejar cambios en el campo de valor total
-  const handleValorTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    
-    // Eliminar caracteres no numéricos excepto el punto
-    const numericValue = value.replace(/[^\d.]/g, '');
-    
-    // Actualizar el valor en el estado del formulario
-    const updatedEntidadData: Partial<EntidadDataPartial> = {
-      ...datosEntidad,
-      valorTotal: numericValue
-    };
-
-    updateFormData({
-      datosEntidad: updatedEntidadData
-    });
-  };
-
-  if (loading) {
-    return <div className="text-center py-6">Cargando opciones...</div>;
+  // Mostrar indicador de carga mientras se obtienen los datos
+  if (isLoading) {
+    return (
+      <div className="p-4 bg-gray-50 rounded-md flex items-center justify-center space-x-2">
+        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-pink-500"></div>
+        <span className="text-gray-700">Cargando opciones...</span>
+      </div>
+    );
   }
 
+  // Mostrar mensaje de error si ocurrió un problema
   if (error) {
     return (
-      <div className="text-center py-6 text-red-600">
-        <p>{error}</p>
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+        <p className="text-red-700">{error}</p>
         <button 
           onClick={() => window.location.reload()}
-          className="mt-4 bg-pink-500 text-white px-4 py-2 rounded-md hover:bg-pink-600"
+          className="mt-2 text-sm text-red-600 underline"
         >
           Reintentar
         </button>
@@ -123,8 +151,8 @@ const Step2: React.FC = () => {
           required
         >
           <option value="">Seleccione un tipo de proyecto</option>
-          {tiposProyectos.map(tipo => (
-            <option key={tipo.id} value={tipo.id.toString()}>
+          {tiposProyecto.map(tipo => (
+            <option key={tipo.id} value={tipo.id}>
               {tipo.tipo_proyecto}
             </option>
           ))}
@@ -202,7 +230,7 @@ const Step2: React.FC = () => {
         >
           <option value="">Seleccione población</option>
           {poblacionesObjetivo.map(poblacion => (
-            <option key={poblacion.id} value={poblacion.id.toString()}>
+            <option key={poblacion.id} value={poblacion.id}>
               {poblacion.poblacion_objetivo}
             </option>
           ))}
@@ -223,8 +251,9 @@ const Step2: React.FC = () => {
             type="text"
             id="valorTotal"
             name="valorTotal"
-            value={formatCurrency(datosEntidad?.valorTotal || '')}
-            onChange={handleValorTotalChange}
+            value={valorTotalRaw}
+            onChange={handleChange}
+            onBlur={handleBlur}
             className={`${inputBaseClass} pl-8 ${
               validationState.valorTotal?.isValid === false ? 'border-red-500' : ''
             }`}

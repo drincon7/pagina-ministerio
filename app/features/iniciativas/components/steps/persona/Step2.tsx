@@ -27,8 +27,12 @@ const Step2: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Estado local para mantener el valor sin formatear durante la edición
+  const [valorTotalRaw, setValorTotalRaw] = useState<string>(datosPersona?.valorTotal || '');
+
   // Clases base comunes
-  const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
+  const inputBaseClass =
+    "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
   // Cargar las opciones desde la API al montar el componente
@@ -37,18 +41,18 @@ const Step2: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Obtener el ID de la entidad desde variables de entorno
         const entidadId = process.env.NEXT_PUBLIC_ENTIDAD_ID || '1';
-        
+
         // Cargar tipos de proyecto
         const tiposResponse = await IniciativaAPI.findAllTiposProyecto(entidadId);
         setTiposProyecto(tiposResponse);
-        
+
         // Cargar poblaciones objetivo
         const poblacionesResponse = await IniciativaAPI.findAllPoblacionesObjetivo(entidadId);
         setPoblacionesObjetivo(poblacionesResponse);
-        
+
         setIsLoading(false);
       } catch (err) {
         console.error('Error al cargar opciones:', err);
@@ -56,45 +60,56 @@ const Step2: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchOptions();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  // Función para formatear el valor como moneda
+  const formatCurrency = (value: string | undefined): string => {
+    if (!value) return '';
+
+    // Eliminar caracteres no numéricos
+    const numericValue = value.replace(/[^0-9]/g, '');
+
+    // Formatear con separador de miles
+    return new Intl.NumberFormat('es-CO').format(parseInt(numericValue) || 0);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    
-    // Procesamiento especial para el valor total (solo permitir números)
+
+    // Procesamiento especial para "valorTotal"
     if (name === 'valorTotal') {
-      // Eliminar cualquier caracter que no sea un número
+      // Eliminar cualquier carácter que no sea número
       const numericValue = value.replace(/[^0-9]/g, '');
-      
+      setValorTotalRaw(numericValue);
+
       updateFormData({
         datosPersona: {
           ...datosPersona,
           [name]: numericValue,
-        }
+        },
       });
       return;
     }
-    
+
     // Para el resto de los campos
     updateFormData({
       datosPersona: {
         ...datosPersona,
         [name]: value,
-      }
+      },
     });
   };
 
-  // Formatear valor como moneda
-  const formatCurrency = (value: string | undefined): string => {
-    if (!value) return '';
-    
-    // Eliminar caracteres no numéricos
-    const numericValue = value.replace(/[^0-9]/g, '');
-    
-    // Formatear con separador de miles
-    return new Intl.NumberFormat('es-CO').format(parseInt(numericValue) || 0);
+  // Al perder el foco, se formatea el valor y se actualiza el estado local
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.name === 'valorTotal') {
+      const formatted = formatCurrency(valorTotalRaw);
+      setValorTotalRaw(formatted);
+    }
   };
 
   // Mostrar indicador de carga mientras se obtienen los datos
@@ -112,7 +127,7 @@ const Step2: React.FC = () => {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-md">
         <p className="text-red-700">{error}</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="mt-2 text-sm text-red-600 underline"
         >
@@ -140,7 +155,7 @@ const Step2: React.FC = () => {
           required
         >
           <option value="">Seleccione un tipo de proyecto</option>
-          {tiposProyecto.map(tipo => (
+          {tiposProyecto.map((tipo) => (
             <option key={tipo.id} value={tipo.id}>
               {tipo.tipo_proyecto}
             </option>
@@ -150,7 +165,7 @@ const Step2: React.FC = () => {
           <p className="text-red-500 text-sm mt-1">{validationState.tipoProyecto.message}</p>
         )}
       </div>
-      
+
       {/* Título de la iniciativa */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="titulo">
@@ -218,7 +233,7 @@ const Step2: React.FC = () => {
           required
         >
           <option value="">Seleccione población</option>
-          {poblacionesObjetivo.map(poblacion => (
+          {poblacionesObjetivo.map((poblacion) => (
             <option key={poblacion.id} value={poblacion.id}>
               {poblacion.poblacion_objetivo}
             </option>
@@ -240,8 +255,9 @@ const Step2: React.FC = () => {
             type="text"
             id="valorTotal"
             name="valorTotal"
-            value={formatCurrency(datosPersona?.valorTotal)}
+            value={valorTotalRaw}
             onChange={handleChange}
+            onBlur={handleBlur}
             className={`${inputBaseClass} pl-8 ${
               validationState.valorTotal?.isValid === false ? 'border-red-500' : ''
             }`}

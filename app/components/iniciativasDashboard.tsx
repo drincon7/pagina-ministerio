@@ -3,66 +3,31 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FormularioIniciativas from './form';
-
-// Mock de API para iniciativas mientras se implementa el servicio real
-const IniciativaAPI = {
-  findByRadicado: async (radicado: string) => {
-    // Simulamos una llamada a la API con un tiempo de espera
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Simulamos una respuesta basada en el radicado
-    if (radicado === '202501000001') {
-      return {
-        id: 1,
-        radicado: 202501000001,
-        titulo: 'Proyecto de ejemplo',
-        fecha_creacion: '2025-01-15T10:30:00Z',
-        estado: { nombre_estado: 'Recibido' }
-      };
-    } else if (radicado === '202501000002') {
-      return {
-        id: 2,
-        radicado: 202501000002,
-        titulo: 'Iniciativa de prueba',
-        fecha_creacion: '2025-01-20T14:45:00Z',
-        estado: { nombre_estado: 'Validado' }
-      };
-    }
-    
-    // Si no coincide con ninguno de los ejemplos, retornamos null
-    return null;
-  }
-};
+import { useIniciativaQuery } from '@/features/iniciativas/hooks/useIniciativaQuery';
+import IniciativaCard from '@/features/iniciativas/components/IniciativaCard';
 
 const IniciativasDashboard: React.FC = () => {
   const router = useRouter();
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [mostrarConsulta, setMostrarConsulta] = useState(false);
   const [radicado, setRadicado] = useState('');
-  const [iniciativa, setIniciativa] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  
+  // Utilizamos el hook personalizado para manejar la consulta de iniciativas
+  const { 
+    iniciativa, 
+    loading, 
+    error, 
+    fetchByRadicado, 
+    reset 
+  } = useIniciativaQuery();
 
-  // Manejar la consulta de radicado
+  // Manejar la consulta de radicado usando el hook
   const handleConsultarRadicado = async () => {
     if (!radicado.trim()) {
-      setError('Por favor ingrese un número de radicado');
       return;
     }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const resultado = await IniciativaAPI.findByRadicado(radicado);
-      setIniciativa(resultado);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error al consultar radicado:', err);
-      setError('No se encontró ninguna iniciativa con el radicado proporcionado');
-      setIniciativa(null);
-      setLoading(false);
-    }
+    
+    await fetchByRadicado(radicado);
   };
 
   // Mostrar el detalle de la iniciativa
@@ -73,7 +38,7 @@ const IniciativasDashboard: React.FC = () => {
   // Renderizado condicional de los resultados de búsqueda
   const renderResultado = () => {
     if (loading) {
-      return <div className="text-center py-4">Cargando...</div>;
+      return <div className="text-center py-4 text-neutral-900">Cargando...</div>;
     }
 
     if (error) {
@@ -82,45 +47,11 @@ const IniciativasDashboard: React.FC = () => {
 
     if (iniciativa) {
       return (
-        <div className="bg-white rounded-lg border border-pink-200 p-6 mt-4 shadow-sm">
-          <h3 className="font-bold text-xl mb-2">Iniciativa encontrada</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Radicado:</p>
-              <p className="font-medium">{iniciativa.radicado}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Estado:</p>
-              <p className="font-medium">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  iniciativa.estado.nombre_estado === 'Recibido' ? 'bg-blue-100 text-blue-800' :
-                  iniciativa.estado.nombre_estado === 'Validado' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {iniciativa.estado.nombre_estado}
-                </span>
-              </p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-sm text-gray-600">Título:</p>
-              <p className="font-medium">{iniciativa.titulo}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-sm text-gray-600">Fecha de creación:</p>
-              <p className="font-medium">
-                {new Date(iniciativa.fecha_creacion).toLocaleDateString('es-CO')}
-              </p>
-            </div>
-            <div className="col-span-2 mt-3">
-              <button
-                onClick={() => irAlDetalle(iniciativa.id)}
-                className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md transition-colors w-full"
-              >
-                Ver detalles
-              </button>
-            </div>
-          </div>
-        </div>
+        <IniciativaCard 
+          iniciativa={iniciativa} 
+          onVerDetalles={irAlDetalle} 
+          className="mt-4" 
+        />
       );
     }
 
@@ -160,10 +91,10 @@ const IniciativasDashboard: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-8 mb-16">
           {/* Tarjeta para Crear Iniciativa */}
           <div 
-            className="bg-white rounded-lg border border-pink-200 p-8 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white rounded-lg border border-pink-200 p-8 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
             onClick={() => setMostrarFormulario(true)}
           >
-            <div className="flex flex-col items-center justify-center p-6">
+            <div className="flex flex-col items-center justify-center p-6 flex-grow">
               <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -173,21 +104,23 @@ const IniciativasDashboard: React.FC = () => {
               <p className="text-gray-600 text-base text-center mb-6">
                 Registre una nueva iniciativa en el sistema y obtenga un número de radicado único.
               </p>
-              <button 
-                className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-md transition-colors text-lg"
-                onClick={() => setMostrarFormulario(true)}
-              >
-                Crear
-              </button>
+              <div className="mt-auto w-full flex justify-center">
+                <button 
+                  className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-md transition-colors text-lg w-40"
+                  onClick={() => setMostrarFormulario(true)}
+                >
+                  Crear
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Tarjeta para Consultar Iniciativa */}
           <div 
-            className="bg-white rounded-lg border border-pink-200 p-8 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white rounded-lg border border-pink-200 p-8 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
             onClick={() => setMostrarConsulta(true)}
           >
-            <div className="flex flex-col items-center justify-center p-6">
+            <div className="flex flex-col items-center justify-center p-6 flex-grow">
               <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -197,12 +130,14 @@ const IniciativasDashboard: React.FC = () => {
               <p className="text-gray-600 text-base text-center mb-6">
                 Verifique el estado de una iniciativa utilizando su número de radicado.
               </p>
-              <button 
-                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-md transition-colors text-lg"
-                onClick={() => setMostrarConsulta(true)}
-              >
-                Consultar
-              </button>
+              <div className="mt-auto w-full flex justify-center">
+                <button 
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-md transition-colors text-lg w-40"
+                  onClick={() => setMostrarConsulta(true)}
+                >
+                  Consultar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -214,8 +149,7 @@ const IniciativasDashboard: React.FC = () => {
               className="text-gray-500 hover:text-gray-700"
               onClick={() => {
                 setMostrarConsulta(false);
-                setIniciativa(null);
-                setError(null);
+                reset();
                 setRadicado('');
               }}
             >
@@ -235,7 +169,7 @@ const IniciativasDashboard: React.FC = () => {
                 value={radicado}
                 onChange={(e) => setRadicado(e.target.value)}
                 placeholder="Ingrese el número de radicado"
-                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-black"
               />
               <button
                 onClick={handleConsultarRadicado}
@@ -251,7 +185,11 @@ const IniciativasDashboard: React.FC = () => {
           
           <div className="mt-6 text-center">
             <button
-              onClick={() => setMostrarConsulta(false)}
+              onClick={() => {
+                setMostrarConsulta(false);
+                reset();
+                setRadicado('');
+              }}
               className="text-pink-500 hover:text-pink-700 underline"
             >
               Volver al inicio

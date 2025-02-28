@@ -26,6 +26,9 @@ const Step2: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Estado local para mantener el valor sin formatear durante la edición
+  const [valorTotalRaw, setValorTotalRaw] = useState<string>(datosOrganizacion?.valorTotal || '');
+
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
@@ -59,13 +62,25 @@ const Step2: React.FC = () => {
     fetchOptions();
   }, []);
 
+  // Función para formatear el valor como moneda
+  const formatCurrency = (value: string | undefined): string => {
+    if (!value) return '';
+    
+    // Eliminar caracteres no numéricos
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Formatear con separador de miles
+    return new Intl.NumberFormat('es-CO').format(parseInt(numericValue) || 0);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    // Procesamiento especial para el valor total (solo permitir números)
+    // Procesamiento especial para "valorTotal"
     if (name === 'valorTotal') {
-      // Eliminar cualquier caracter que no sea un número
+      // Eliminar cualquier carácter que no sea número
       const numericValue = value.replace(/[^0-9]/g, '');
+      setValorTotalRaw(numericValue);
       
       updateFormData({
         datosOrganizacion: {
@@ -85,18 +100,15 @@ const Step2: React.FC = () => {
     });
   };
 
-  // Formatear valor como moneda
-  const formatCurrency = (value: string | undefined): string => {
-    if (!value) return '';
-    
-    // Eliminar caracteres no numéricos
-    const numericValue = value.replace(/[^0-9]/g, '');
-    
-    // Formatear con separador de miles
-    return new Intl.NumberFormat('es-CO').format(parseInt(numericValue) || 0);
+  // Al perder el foco, formatear el valor y actualizar el estado local
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.name === 'valorTotal') {
+      const formatted = formatCurrency(valorTotalRaw);
+      setValorTotalRaw(formatted);
+    }
   };
 
-  // Mostrar indicador de carga mientras se obtienen los datos
+  // Indicador de carga
   if (isLoading) {
     return (
       <div className="p-4 bg-gray-50 rounded-md flex items-center justify-center space-x-2">
@@ -106,7 +118,7 @@ const Step2: React.FC = () => {
     );
   }
 
-  // Mostrar mensaje de error si ocurrió un problema
+  // Mensaje de error
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -239,8 +251,9 @@ const Step2: React.FC = () => {
             type="text"
             id="valorTotal"
             name="valorTotal"
-            value={formatCurrency(datosOrganizacion?.valorTotal)}
+            value={valorTotalRaw}
             onChange={handleChange}
+            onBlur={handleBlur}
             className={`${inputBaseClass} pl-8 ${
               validationState.valorTotal?.isValid === false ? 'border-red-500' : ''
             }`}
