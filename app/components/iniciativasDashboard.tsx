@@ -38,7 +38,7 @@ const IniciativasDashboard: React.FC = () => {
   // Renderizado condicional de los resultados de búsqueda
   const renderResultado = () => {
     if (loading) {
-      return <div className="text-center py-4 text-neutral-900">Cargando...</div>;
+      return <div className="text-center py-4">Cargando...</div>;
     }
 
     if (error) {
@@ -49,7 +49,6 @@ const IniciativasDashboard: React.FC = () => {
       return (
         <IniciativaCard 
           iniciativa={iniciativa} 
-          onVerDetalles={irAlDetalle} 
           className="mt-4" 
         />
       );
@@ -169,7 +168,7 @@ const IniciativasDashboard: React.FC = () => {
                 value={radicado}
                 onChange={(e) => setRadicado(e.target.value)}
                 placeholder="Ingrese el número de radicado"
-                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-black"
+                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-800"
               />
               <button
                 onClick={handleConsultarRadicado}

@@ -1,12 +1,14 @@
 // @/features/iniciativas/components/IniciativaCard.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Iniciativa } from '@/services/types/iniciativa';
 import { formatCurrency } from '@/features/iniciativas/utils/currencyFormatter';
+import formatDate from '@/features/iniciativas/utils/dateFormatter';
+import IniciativaDetalleModal from './IniciativaDetalleModal';
 
 interface IniciativaCardProps {
   iniciativa: Iniciativa; // Nunca será null porque el componente solo se renderiza cuando hay iniciativa
-  onVerDetalles: (id: number) => void;
+  onVerDetalles?: (id: number) => void; // Ahora es opcional, ya que mostraremos un modal
   className?: string;
 }
 
@@ -18,6 +20,18 @@ const IniciativaCard: React.FC<IniciativaCardProps> = ({
   onVerDetalles,
   className = '' 
 }) => {
+  // Estado para controlar la visibilidad del modal
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  // Función para abrir el modal
+  const abrirModal = () => {
+    setModalVisible(true);
+  };
+  
+  // Función para cerrar el modal
+  const cerrarModal = () => {
+    setModalVisible(false);
+  };
   // Determinar el color de fondo según el estado
   const getStatusColor = (estado: string): string => {
     // Verificar que estado no sea undefined antes de llamar a toLowerCase
@@ -81,7 +95,7 @@ const IniciativaCard: React.FC<IniciativaCardProps> = ({
         
         <div>
           <p className="text-sm text-gray-600">Fecha de creación:</p>
-          <p className="font-medium text-gray-800">{iniciativa.fecha_creacion || 'No especificada'}</p>
+          <p className="font-medium text-gray-800">{formatDate(iniciativa.fecha_creacion)}</p>
         </div>
         
         {iniciativa.responsable && (
@@ -93,13 +107,21 @@ const IniciativaCard: React.FC<IniciativaCardProps> = ({
         
         <div className="col-span-2 mt-3">
           <button
-            onClick={() => onVerDetalles(iniciativa.id)}
+            onClick={abrirModal}
             className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md transition-colors w-full"
           >
             Ver detalles completos
           </button>
         </div>
       </div>
+      
+      {/* Modal de detalles */}
+      {modalVisible && (
+        <IniciativaDetalleModal 
+          iniciativa={iniciativa} 
+          onClose={cerrarModal} 
+        />
+      )}
     </div>
   );
 };
