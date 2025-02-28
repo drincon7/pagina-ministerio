@@ -1,9 +1,10 @@
 // @/features/iniciativas/components/IniciativaDetalleModal.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Iniciativa } from '@/services/types/iniciativa';
 import { formatCurrency } from '@/features/iniciativas/utils/currencyFormatter';
 import formatDate from '@/features/iniciativas/utils/dateFormatter';
+import { IniciativaAPI } from '@/services/api/iniciativa';
 
 interface IniciativaDetalleModalProps {
   iniciativa: Iniciativa;
@@ -14,6 +15,32 @@ const IniciativaDetalleModal: React.FC<IniciativaDetalleModalProps> = ({
   iniciativa, 
   onClose 
 }) => {
+  // Estado para los documentos
+  const [documentos, setDocumentos] = useState<any[]>([]);
+  const [cargandoDocumentos, setCargandoDocumentos] = useState(false);
+  const [errorDocumentos, setErrorDocumentos] = useState<string | null>(null);
+
+  // Cargar documentos al abrir el modal
+  useEffect(() => {
+    const cargarDocumentos = async () => {
+      if (!iniciativa.id) return;
+      
+      setCargandoDocumentos(true);
+      setErrorDocumentos(null);
+      
+      try {
+        const docs = await IniciativaAPI.getDocuments(iniciativa.id);
+        setDocumentos(Array.isArray(docs) ? docs : []);
+      } catch (error) {
+        setErrorDocumentos('No se pudieron cargar los documentos adjuntos.');
+      } finally {
+        setCargandoDocumentos(false);
+      }
+    };
+    
+    cargarDocumentos();
+  }, [iniciativa.id]);
+  
   // Agregar un event listener para cerrar el modal con la tecla Escape
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -169,6 +196,54 @@ const IniciativaDetalleModal: React.FC<IniciativaDetalleModalProps> = ({
                 </div>
               </div>
             )}
+            
+            {/* Sección de documentos adjuntos */}
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-2">Documentos adjuntos:</p>
+              
+              {cargandoDocumentos ? (
+                <div className="text-gray-500 text-center py-4">Cargando documentos...</div>
+              ) : errorDocumentos ? (
+                <div className="text-red-500 text-sm">{errorDocumentos}</div>
+              ) : documentos.length === 0 ? (
+                <div className="text-gray-500 italic">No hay documentos adjuntos.</div>
+              ) : (
+                <div className="space-y-2">
+                  {documentos.map((doc, index) => (
+                    <div 
+                      key={doc.id || index} 
+                      className="flex items-center justify-between bg-gray-50 p-3 rounded-md border border-gray-200"
+                    >
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            {doc.documento_nombre || doc.nombre || `Documento ${index + 1}`}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {doc.fecha_carga ? formatDate(doc.fecha_carga, 'Sin fecha') : 'Sin fecha'}
+                          </p>
+                        </div>
+                      </div>
+                      <a 
+                        href={doc.documento || doc.url} 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-pink-500 hover:text-pink-700 text-sm font-medium flex items-center"
+                        download
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Descargar
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Pie del modal */}
