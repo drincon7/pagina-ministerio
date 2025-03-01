@@ -3,55 +3,38 @@
 import React, { useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
 import StepNavigation from '../../StepNavigation';
-import type { FormData } from '../../../types/formTypes';
+import { useFormField } from '../../../hooks/useFormField';
 
 const Step1: React.FC = () => {
   const { 
     formData, 
-    updateFormData,
-    validationState, 
-    validateCurrentStep
+    updateFormData
   } = useFormContext();
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
-  // Efecto para validar los datos del formulario cuando hay cambios significativos
-  useEffect(() => {
-    // Usamos un timeout para reducir las validaciones mientras el usuario escribe
-    const validationTimeout = setTimeout(() => {
-      validateCurrentStep();
-    }, 300);
-    
-    return () => clearTimeout(validationTimeout);
-  }, [
-    formData.datosOrganizacion?.nombreOrganizacion,
-    formData.datosOrganizacion?.razonOrganizacion,
-    formData.datosOrganizacion?.email,
-    formData.datosOrganizacion?.numeroContacto,
-    validateCurrentStep
-  ]);
+  // Usar el hook useFormField para cada campo
+  const nombreOrganizacionField = useFormField('nombreOrganizacion', 'organizacion', { 
+    required: true, 
+    minLength: 2 
+  });
   
-  // Validar los datos iniciales al montar el componente
-  useEffect(() => {
-    validateCurrentStep();
-  }, [validateCurrentStep]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    const updatedOrganizacionData = {
-      ...formData.datosOrganizacion,
-      [name]: value,
-    };
-
-    const newFormData: Partial<FormData> = {
-      datosOrganizacion: updatedOrganizacionData
-    };
-
-    updateFormData(newFormData);
-  };
+  const razonOrganizacionField = useFormField('razonOrganizacion', 'organizacion', { 
+    required: true, 
+    pattern: /^\d{9,10}-?\d?$/ 
+  });
+  
+  const emailField = useFormField('email', 'organizacion', { 
+    required: true, 
+    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+  });
+  
+  const numeroContactoField = useFormField('numeroContacto', 'organizacion', { 
+    required: true, 
+    pattern: /^\d{10}$/ 
+  });
 
   return (
     <div className="space-y-4">
@@ -64,15 +47,15 @@ const Step1: React.FC = () => {
           type="text"
           id="nombreOrganizacion"
           name="nombreOrganizacion"
-          value={formData.datosOrganizacion?.nombreOrganizacion ?? ''}
-          onChange={handleChange}
+          value={nombreOrganizacionField.value}
+          onChange={nombreOrganizacionField.handleChange}
           className={`${inputBaseClass} ${
-            validationState?.nombreOrganizacion?.isValid === false ? 'border-red-500' : ''
+            !nombreOrganizacionField.validation.isValid && nombreOrganizacionField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.nombreOrganizacion?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.nombreOrganizacion.message}</p>
+        {!nombreOrganizacionField.validation.isValid && nombreOrganizacionField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{nombreOrganizacionField.validation.message}</p>
         )}
       </div>
 
@@ -89,17 +72,17 @@ const Step1: React.FC = () => {
             type="text"
             id="razonOrganizacion"
             name="razonOrganizacion"
-            value={formData.datosOrganizacion?.razonOrganizacion ?? ''}
-            onChange={handleChange}
+            value={razonOrganizacionField.value}
+            onChange={razonOrganizacionField.handleChange}
             placeholder="Número de NIT"
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.razonOrganizacion?.isValid === false ? 'border-red-500' : ''
+              !razonOrganizacionField.validation.isValid && razonOrganizacionField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.razonOrganizacion?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.razonOrganizacion.message}</p>
+        {!razonOrganizacionField.validation.isValid && razonOrganizacionField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{razonOrganizacionField.validation.message}</p>
         )}
       </div>
 
@@ -112,16 +95,16 @@ const Step1: React.FC = () => {
           type="email"
           id="email"
           name="email"
-          value={formData.datosOrganizacion?.email ?? ''}
-          onChange={handleChange}
+          value={emailField.value}
+          onChange={emailField.handleChange}
           placeholder="ejemplo@gmail.com"
           className={`${inputBaseClass} ${
-            validationState?.email?.isValid === false ? 'border-red-500' : ''
+            !emailField.validation.isValid && emailField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.email?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
+        {!emailField.validation.isValid && emailField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{emailField.validation.message}</p>
         )}
       </div>
 
@@ -138,17 +121,17 @@ const Step1: React.FC = () => {
             type="tel"
             id="numeroContacto"
             name="numeroContacto"
-            value={formData.datosOrganizacion?.numeroContacto ?? ''}
-            onChange={handleChange}
+            value={numeroContactoField.value}
+            onChange={numeroContactoField.handleChange}
             placeholder="Ej: 10090292929"
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.numeroContacto?.isValid === false ? 'border-red-500' : ''
+              !numeroContactoField.validation.isValid && numeroContactoField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.numeroContacto?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.numeroContacto.message}</p>
+        {!numeroContactoField.validation.isValid && numeroContactoField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{numeroContactoField.validation.message}</p>
         )}
       </div>
 

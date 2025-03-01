@@ -1,60 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useFormContext } from '../../../context/FormContext';
 import StepNavigation from '../../StepNavigation';
+import { useFormField } from '../../../hooks/useFormField';
 
 const Step1: React.FC = () => {
   const { 
     formData, 
-    updateFormData, 
+    updateFormData,
     validationState, 
-    validateCurrentStep 
+    validateCurrentStep
   } = useFormContext();
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
-  // Efecto para validar los datos del formulario cuando hay cambios significativos
-  useEffect(() => {
-    // Usamos un timeout para reducir las validaciones mientras el usuario escribe
-    const validationTimeout = setTimeout(() => {
-      validateCurrentStep();
-    }, 300);
-    
-    return () => clearTimeout(validationTimeout);
-  }, [
-    formData.datosPersona?.numeroDocumento,
-    formData.datosPersona?.nombres,
-    formData.datosPersona?.primerApellido,
-    formData.datosPersona?.email,
-    formData.datosPersona?.numeroContacto,
-    validateCurrentStep
-  ]);
-  
-  // Validar los datos iniciales al montar el componente
-  useEffect(() => {
-    validateCurrentStep();
-  }, [validateCurrentStep]);
-
-  // Manejo de cambios en los campos del formulario
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-    const { name, value } = e.target;
-    
-    const updatedPersonaData = {
-      ...formData.datosPersona,
-      [name]: value,
-    };
-
-    updateFormData({
-      datosPersona: updatedPersonaData
-    });
-  };
+  // Usar el hook useFormField para cada campo
+  const nombresField = useFormField('nombres', 'persona', { required: true, minLength: 2 });
+  const primerApellidoField = useFormField('primerApellido', 'persona', { required: true, minLength: 2 });
+  const segundoApellidoField = useFormField('segundoApellido', 'persona', {});
+  const numeroDocumentoField = useFormField('numeroDocumento', 'persona', { 
+    required: true, 
+    pattern: /^\d+$/, 
+    minLength: 6, 
+    maxLength: 12 
+  });
+  const emailField = useFormField('email', 'persona', { 
+    required: true, 
+    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+  });
+  const numeroContactoField = useFormField('numeroContacto', 'persona', { 
+    required: true, 
+    pattern: /^\d{10}$/ 
+  });
 
   return (
-    <div className="space-y-4">      
-
+    <div className="space-y-4">
       {/* 🔹 Nombres */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="nombres">
@@ -64,15 +47,15 @@ const Step1: React.FC = () => {
           type="text"
           id="nombres"
           name="nombres"
-          value={formData.datosPersona?.nombres ?? ''}
-          onChange={handleChange}
+          value={nombresField.value}
+          onChange={nombresField.handleChange}
           className={`${inputBaseClass} ${
-            validationState?.nombres?.isValid === false ? 'border-red-500' : ''
+            !nombresField.validation.isValid && nombresField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.nombres?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.nombres.message}</p>
+        {!nombresField.validation.isValid && nombresField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{nombresField.validation.message}</p>
         )}
       </div>
 
@@ -85,15 +68,15 @@ const Step1: React.FC = () => {
           type="text"
           id="primerApellido"
           name="primerApellido"
-          value={formData.datosPersona?.primerApellido ?? ''}
-          onChange={handleChange}
+          value={primerApellidoField.value}
+          onChange={primerApellidoField.handleChange}
           className={`${inputBaseClass} ${
-            validationState?.primerApellido?.isValid === false ? 'border-red-500' : ''
+            !primerApellidoField.validation.isValid && primerApellidoField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.primerApellido?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.primerApellido.message}</p>
+        {!primerApellidoField.validation.isValid && primerApellidoField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{primerApellidoField.validation.message}</p>
         )}
       </div>
 
@@ -106,8 +89,8 @@ const Step1: React.FC = () => {
           type="text"
           id="segundoApellido"
           name="segundoApellido"
-          value={formData.datosPersona?.segundoApellido ?? ''}
-          onChange={handleChange}
+          value={segundoApellidoField.value}
+          onChange={segundoApellidoField.handleChange}
           className={inputBaseClass}
         />
       </div>
@@ -122,7 +105,14 @@ const Step1: React.FC = () => {
             className="w-16 text-gray-700 font-medium border border-gray-300 rounded-md"
             name="tipoDocumento"
             value={formData.datosPersona?.tipoDocumento ?? 'CC'}
-            onChange={handleChange}
+            onChange={(e) => {
+              updateFormData({
+                datosPersona: {
+                  ...formData.datosPersona,
+                  tipoDocumento: e.target.value
+                }
+              });
+            }}
           >
             <option value="CC">CC.</option>
             <option value="CE">CE.</option>
@@ -132,16 +122,16 @@ const Step1: React.FC = () => {
             type="text"
             id="numeroDocumento"
             name="numeroDocumento"
-            value={formData.datosPersona?.numeroDocumento ?? ''}
-            onChange={handleChange}
+            value={numeroDocumentoField.value}
+            onChange={numeroDocumentoField.handleChange}
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.numeroDocumento?.isValid === false ? 'border-red-500' : ''
+              !numeroDocumentoField.validation.isValid && numeroDocumentoField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.numeroDocumento?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.numeroDocumento.message}</p>
+        {!numeroDocumentoField.validation.isValid && numeroDocumentoField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{numeroDocumentoField.validation.message}</p>
         )}
       </div>
 
@@ -154,15 +144,15 @@ const Step1: React.FC = () => {
           type="email"
           id="email"
           name="email"
-          value={formData.datosPersona?.email ?? ''}
-          onChange={handleChange}
+          value={emailField.value}
+          onChange={emailField.handleChange}
           className={`${inputBaseClass} ${
-            validationState?.email?.isValid === false ? 'border-red-500' : ''
+            !emailField.validation.isValid && emailField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.email?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
+        {!emailField.validation.isValid && emailField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{emailField.validation.message}</p>
         )}
       </div>
 
@@ -179,21 +169,21 @@ const Step1: React.FC = () => {
             type="tel"
             id="numeroContacto"
             name="numeroContacto"
-            value={formData.datosPersona?.numeroContacto ?? ''}
-            onChange={handleChange}
+            value={numeroContactoField.value}
+            onChange={numeroContactoField.handleChange}
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.numeroContacto?.isValid === false ? 'border-red-500' : ''
+              !numeroContactoField.validation.isValid && numeroContactoField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.numeroContacto?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.numeroContacto.message}</p>
+        {!numeroContactoField.validation.isValid && numeroContactoField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{numeroContactoField.validation.message}</p>
         )}
       </div>
 
       {/* Navegación entre pasos */}
-      <StepNavigation/>
+      <StepNavigation />
     </div>
   );
 };

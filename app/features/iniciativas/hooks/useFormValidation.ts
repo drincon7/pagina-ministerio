@@ -1,7 +1,34 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { FormData, ValidationState } from '../types/formTypes';
+
+// Crear un objeto inicial con todos los posibles campos validados
+const initialValidationState: ValidationState = {
+  // Campos de persona
+  numeroDocumento: { isValid: true, message: '' },
+  nombres: { isValid: true, message: '' },
+  primerApellido: { isValid: true, message: '' },
+  segundoApellido: { isValid: true, message: '' },
+  email: { isValid: true, message: '' },
+  numeroContacto: { isValid: true, message: '' },
+  
+  // Campos de entidad
+  nombre: { isValid: true, message: '' },
+  nit: { isValid: true, message: '' },
+  telefono: { isValid: true, message: '' },
+  
+  // Campos de organización
+  nombreOrganizacion: { isValid: true, message: '' },
+  razonOrganizacion: { isValid: true, message: '' },
+  
+  // Campos comunes para iniciativa
+  tipoProyecto: { isValid: true, message: '' },
+  titulo: { isValid: true, message: '' },
+  descripcion: { isValid: true, message: '' },
+  poblacionBeneficiada: { isValid: true, message: '' },
+  valorTotal: { isValid: true, message: '' },
+};
 
 /**
  * Hook para manejar la validación de formularios
@@ -12,6 +39,13 @@ export const useFormValidation = (
   setValidationState: React.Dispatch<React.SetStateAction<ValidationState>>,
   setIsCurrentStepValid: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
+  // Inicializar el estado de validación si es la primera vez
+  useEffect(() => {
+    if (Object.keys(validationState).length === 0) {
+      setValidationState(initialValidationState);
+    }
+  }, [validationState, setValidationState]);
+  
   /**
    * Valida un campo individual según reglas específicas
    */
@@ -59,7 +93,7 @@ export const useFormValidation = (
    */
   const validateCurrentStep = useCallback(() => {
     let stepIsValid = true;
-    let newValidationState: ValidationState = {};
+    let newValidationState = { ...initialValidationState }; // Usar el estado inicial como base
 
     // Validación según tipo de remitente y paso actual
     if (formData.tipoRemitente === 'persona') {
@@ -132,7 +166,6 @@ export const useFormValidation = (
           }
         );
       }
-      // Validaciones para el paso 3 si es necesario
     } 
     // Validación para entidades
     else if (formData.tipoRemitente === 'entidad') {
@@ -267,8 +300,12 @@ export const useFormValidation = (
       }
     }
 
-    // Verificar si todos los campos validados son válidos
-    stepIsValid = Object.values(newValidationState).every(result => result?.isValid === true);
+    // Verificar si todos los campos relevantes para el paso actual son válidos
+    // Solo comprobamos los campos que son relevantes según el paso actual
+    const fieldsToCheck = getFieldsForCurrentStep(formData);
+    stepIsValid = fieldsToCheck.every(field => 
+      newValidationState[field]?.isValid === true
+    );
 
     // Actualizar el estado de validación
     setValidationState(newValidationState);
@@ -276,6 +313,34 @@ export const useFormValidation = (
 
     return stepIsValid;
   }, [formData, validateField, setValidationState, setIsCurrentStepValid]);
+
+  /**
+   * Determina qué campos deben validarse según el paso actual
+   */
+  const getFieldsForCurrentStep = (formData: FormData): string[] => {
+    if (formData.tipoRemitente === 'persona') {
+      if (formData.paso === 1) {
+        return ['numeroDocumento', 'nombres', 'primerApellido', 'email', 'numeroContacto'];
+      } else if (formData.paso === 2) {
+        return ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+      }
+    } 
+    else if (formData.tipoRemitente === 'entidad') {
+      if (formData.paso === 1) {
+        return ['nombre', 'nit', 'email', 'telefono'];
+      } else if (formData.paso === 2) {
+        return ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+      }
+    }
+    else if (formData.tipoRemitente === 'organizacion') {
+      if (formData.paso === 1) {
+        return ['nombreOrganizacion', 'razonOrganizacion', 'email', 'numeroContacto'];
+      } else if (formData.paso === 2) {
+        return ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
+      }
+    }
+    return [];
+  };
 
   /**
    * Valida un campo específico y actualiza el estado de validación

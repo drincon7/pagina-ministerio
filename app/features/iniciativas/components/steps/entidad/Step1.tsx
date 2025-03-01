@@ -1,55 +1,34 @@
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
 import StepNavigation from '../../StepNavigation';
+import { useFormField } from '../../../hooks/useFormField';
 
 const Step1: React.FC = () => {
   const { 
     formData, 
-    updateFormData,
-    validationState, 
-    validateCurrentStep
+    updateFormData
   } = useFormContext();
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
   const labelBaseClass = "block text-gray-700 font-bold text-sm mb-1";
 
-  // Efecto para validar los datos del formulario cuando hay cambios significativos
-  useEffect(() => {
-    // Usamos un timeout para reducir las validaciones mientras el usuario escribe
-    const validationTimeout = setTimeout(() => {
-      validateCurrentStep();
-    }, 300);
-    
-    return () => clearTimeout(validationTimeout);
-  }, [
-    formData.datosEntidad?.nombre,
-    formData.datosEntidad?.nit,
-    formData.datosEntidad?.email,
-    formData.datosEntidad?.telefono,
-    validateCurrentStep
-  ]);
-  
-  // Validar los datos iniciales al montar el componente
-  useEffect(() => {
-    validateCurrentStep();
-  }, [validateCurrentStep]);
-
-  // Manejo de cambios en los campos del formulario
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-    const { name, value } = e.target;
-    
-    const updatedEntidadData = {
-      ...formData.datosEntidad,
-      [name]: value,
-    };
-
-    updateFormData({
-      datosEntidad: updatedEntidadData
-    });
-  };
+  // Usar el hook useFormField para cada campo
+  const nombreField = useFormField('nombre', 'entidad', { required: true, minLength: 2 });
+  const nitField = useFormField('nit', 'entidad', { 
+    required: true, 
+    pattern: /^\d{9,10}-?\d?$/ 
+  });
+  const emailField = useFormField('email', 'entidad', { 
+    required: true, 
+    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ 
+  });
+  const telefonoField = useFormField('telefono', 'entidad', { 
+    required: true, 
+    pattern: /^\d{10}$/ 
+  });
 
   return (
     <div className="space-y-4">
@@ -62,15 +41,15 @@ const Step1: React.FC = () => {
           type="text"
           id="nombre"
           name="nombre"
-          value={formData.datosEntidad?.nombre ?? ''}
-          onChange={handleChange}
+          value={nombreField.value}
+          onChange={nombreField.handleChange}
           className={`${inputBaseClass} ${
-            validationState?.nombre?.isValid === false ? 'border-red-500' : ''
+            !nombreField.validation.isValid && nombreField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.nombre?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.nombre.message}</p>
+        {!nombreField.validation.isValid && nombreField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{nombreField.validation.message}</p>
         )}
       </div>
 
@@ -87,17 +66,17 @@ const Step1: React.FC = () => {
             type="text"
             id="nit"
             name="nit"
-            value={formData.datosEntidad?.nit ?? ''}
-            onChange={handleChange}
+            value={nitField.value}
+            onChange={nitField.handleChange}
             placeholder="Número de NIT"
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.nit?.isValid === false ? 'border-red-500' : ''
+              !nitField.validation.isValid && nitField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.nit?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.nit.message}</p>
+        {!nitField.validation.isValid && nitField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{nitField.validation.message}</p>
         )}
       </div>
 
@@ -110,16 +89,16 @@ const Step1: React.FC = () => {
           type="email"
           id="email"
           name="email"
-          value={formData.datosEntidad?.email ?? ''}
-          onChange={handleChange}
+          value={emailField.value}
+          onChange={emailField.handleChange}
           placeholder="ejemplo@gmail.com"
           className={`${inputBaseClass} ${
-            validationState?.email?.isValid === false ? 'border-red-500' : ''
+            !emailField.validation.isValid && emailField.showValidationError ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState?.email?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
+        {!emailField.validation.isValid && emailField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{emailField.validation.message}</p>
         )}
       </div>
 
@@ -136,17 +115,17 @@ const Step1: React.FC = () => {
             type="tel"
             id="telefono"
             name="telefono"
-            value={formData.datosEntidad?.telefono ?? ''}
-            onChange={handleChange}
+            value={telefonoField.value}
+            onChange={telefonoField.handleChange}
             placeholder="Ej: 10090292929"
             className={`flex-1 ${inputBaseClass} ${
-              validationState?.telefono?.isValid === false ? 'border-red-500' : ''
+              !telefonoField.validation.isValid && telefonoField.showValidationError ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState?.telefono?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.telefono.message}</p>
+        {!telefonoField.validation.isValid && telefonoField.showValidationError && (
+          <p className="text-red-500 text-sm mt-1">{telefonoField.validation.message}</p>
         )}
       </div>
 

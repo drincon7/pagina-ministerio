@@ -8,14 +8,16 @@ import { useFormValidation } from '../hooks/useFormValidation';
 interface FormContextType {
   formData: FormData;
   updateFormData: (updates: Partial<FormData>) => void;
-  resetForm: () => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  maxSteps: number;
   validationState: ValidationState;
   setValidationState: React.Dispatch<React.SetStateAction<ValidationState>>;
   isCurrentStepValid: boolean;
+  setIsCurrentStepValid: React.Dispatch<React.SetStateAction<boolean>>;
   validateCurrentStep: () => boolean;
+  nextStep: () => void;
+  prevStep: () => void;
+  showAllFieldErrors: () => void;
+  resetForm: () => void;
+  maxSteps: number;
 }
 
 // Valores iniciales del formulario
@@ -170,22 +172,29 @@ export const FormProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       saveFormToStorage();
     }
   }, [formData, saveFormToStorage]);
+
+  const showAllFieldErrors = () => {
+    // Esta función se implementará en los componentes de paso que utilizan useFormField
+    // Por ahora es solo un placeholder para el tipo
+  };
+    
+  const contextValue: FormContextType = {
+    formData,
+    updateFormData,
+    validationState,
+    setValidationState,
+    isCurrentStepValid,
+    setIsCurrentStepValid,
+    validateCurrentStep,
+    nextStep,
+    prevStep,
+    showAllFieldErrors,
+    resetForm,
+    maxSteps: getMaxSteps()
+  };
   
   return (
-    <FormContext.Provider
-      value={{
-        formData,
-        updateFormData,
-        resetForm,
-        nextStep,
-        prevStep,
-        maxSteps: getMaxSteps(),
-        validationState,
-        setValidationState,
-        isCurrentStepValid,
-        validateCurrentStep
-      }}
-    >
+    <FormContext.Provider value={contextValue}>
       {children}
     </FormContext.Provider>
   );

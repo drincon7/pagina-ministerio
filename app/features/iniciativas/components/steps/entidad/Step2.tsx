@@ -80,6 +80,7 @@ const Step2: React.FC = () => {
     if (name === 'valorTotal') {
       // Eliminar cualquier carácter que no sea un número
       const numericValue = value.replace(/[^0-9]/g, '');
+      const limitedValue = numericValue.slice(0, 15)
       setValorTotalRaw(numericValue);
       
       updateFormData({

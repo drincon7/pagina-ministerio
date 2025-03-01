@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../context/FormContext';
 import StatusMessage from '@/components/StatusMessage';
 import NavigationButtons from '@/components/NavigationButtons';
-import FormSubmissionService from '@/services/formSubmissionService';
+import { useApiService, ErrorMessage } from '@/features/iniciativas/utils/api-service';
 
 /**
  * Componente de navegación entre pasos del formulario
@@ -21,10 +21,18 @@ const StepNavigation: React.FC = () => {
     validationState
   } = useFormContext();
   
-  // Estados locales para controlar UI
-  const [loading, setLoading] = useState<boolean>(false);
+  // Usar el servicio API centralizado
+  const { 
+    isLoading, 
+    errorMessage, 
+    showError, 
+    apiGet, 
+    apiPost, 
+    clearErrors 
+  } = useApiService();
+  
+  // Estados locales para controlar UI (mantenemos algunos que son específicos)
   const [error, setError] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
 
   // Loguear información relevante solo cuando cambia el paso o validación
@@ -34,29 +42,6 @@ const StepNavigation: React.FC = () => {
     console.log('Tipo de Remitente:', formData.tipoRemitente);
     console.log('Validation State:', validationState);
   }, [formData.paso, isCurrentStepValid, formData.tipoRemitente, validationState]);
-
-  /**
-   * Maneja los errores de las peticiones API
-   * @param err Error capturado
-   * @returns boolean - Siempre devuelve false en caso de error
-   */
-  const handleError = (err: unknown): boolean => {
-    console.error('Error al enviar datos:', err);
-    
-    // Utilizamos type narrowing para manejar diferentes tipos de errores
-    if (err && typeof err === 'object' && 'response' in err) {
-      const apiError = err as { response?: { data?: { message?: string } } };
-      setError(apiError.response?.data?.message || 'Error al enviar los datos');
-    } else if (err instanceof Error) {
-      setError(err.message || 'Error al procesar la solicitud');
-    } else {
-      setError('Error al procesar la solicitud');
-    }
-    
-    setApiStatus('Error al procesar la solicitud');
-    setLoading(false);
-    return false;
-  };
 
   /**
    * Comprueba si los campos requeridos están presentes y son válidos
@@ -82,7 +67,6 @@ const StepNavigation: React.FC = () => {
       }
       
       setError(mensajeError);
-      setLoading(false);
       return false;
     }
     
@@ -100,26 +84,33 @@ const StepNavigation: React.FC = () => {
     }
 
     try {
-      // Usar el servicio para manejar la llamada a la API
-      const response = await FormSubmissionService.savePersonaData(formData);
+      // Usar el nuevo método apiPost en lugar de FormSubmissionService directamente
+      const payload = {
+        identificacion: formData.datosPersona?.numeroDocumento,
+        nombres: formData.datosPersona?.nombres,
+        primer_apellido: formData.datosPersona?.primerApellido,
+        segundo_apellido: formData.datosPersona?.segundoApellido,
+        email: formData.datosPersona?.email,
+        telefono: formData.datosPersona?.numeroContacto,
+        tipo: 1, // Tipo persona
+      };
       
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de persona enviados:', response);
+      const { success, data } = await apiPost('/api/remitente/', payload);
       
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosPersona?.remitenteId) {
+      if (success && data && data.data && data.data.id) {
+        // Guardar el ID del remitente para referencia si es necesario
         updateFormData({
           datosPersona: {
             ...formData.datosPersona,
-            remitenteId: response.data.id.toString()
+            remitenteId: data.data.id.toString()
           }
         });
       }
       
-      setLoading(false);
-      return true;
+      return success;
     } catch (error) {
-      return handleError(error);
+      console.error('Error al enviar datos de persona:', error);
+      return false;
     }
   };
 
@@ -134,26 +125,31 @@ const StepNavigation: React.FC = () => {
     }
 
     try {
-      // Usar el servicio para manejar la llamada a la API
-      const response = await FormSubmissionService.saveEntidadData(formData);
+      // Preparar payload para la API de entidades
+      const payload = {
+        // Adaptar según la estructura esperada por tu API
+        nombre: formData.datosEntidad?.nombre,
+        nit: formData.datosEntidad?.nit,
+        email: formData.datosEntidad?.email,
+        telefono: formData.datosEntidad?.telefono,
+        // Otros campos relevantes
+      };
       
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de entidad enviados:', response);
+      const { success, data } = await apiPost('/api/entidad/', payload);
       
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosEntidad?.remitenteId) {
+      if (success && data && data.data && data.data.id) {
         updateFormData({
           datosEntidad: {
             ...formData.datosEntidad,
-            remitenteId: response.data.id.toString()
+            remitenteId: data.data.id.toString()
           }
         });
       }
       
-      setLoading(false);
-      return true;
+      return success;
     } catch (error) {
-      return handleError(error);
+      console.error('Error al enviar datos de entidad:', error);
+      return false;
     }
   };
 
@@ -168,29 +164,46 @@ const StepNavigation: React.FC = () => {
     }
 
     try {
-      // Usar el servicio para manejar la llamada a la API
-      const response = await FormSubmissionService.saveOrganizacionData(formData);
+      // Preparar payload para la API de organizaciones
+      const payload = {
+        // Adaptar según la estructura esperada por tu API
+        nombre_organizacion: formData.datosOrganizacion?.nombreOrganizacion,
+        razon_organizacion: formData.datosOrganizacion?.razonOrganizacion,
+        email: formData.datosOrganizacion?.email,
+        telefono: formData.datosOrganizacion?.numeroContacto,
+        // Otros campos relevantes
+      };
       
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de organización enviados:', response);
+      const { success, data } = await apiPost('/api/organizacion/', payload);
       
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosOrganizacion?.remitenteId) {
+      if (success && data && data.data && data.data.id) {
         updateFormData({
           datosOrganizacion: {
             ...formData.datosOrganizacion,
-            remitenteId: response.data.id.toString()
+            remitenteId: data.data.id.toString()
           }
         });
       }
       
-      setLoading(false);
-      return true;
+      return success;
     } catch (error) {
-      return handleError(error);
+      console.error('Error al enviar datos de organización:', error);
+      return false;
     }
   };
 
+  // Define una interfaz para el payload con todas las propiedades posibles
+  interface IniciativaPayload {
+    radicado_por?: string;
+    entidad: number;
+    tipo_proyecto?: string;
+    titulo?: string;
+    descripcion?: string;
+    poblacion_beneficiada?: string;
+    valor_total?: string;
+    creado_desde: string;
+  }
+  
   /**
    * Maneja el envío de datos de iniciativa
    */
@@ -213,46 +226,74 @@ const StepNavigation: React.FC = () => {
         if (!validateRequiredFields(requiredFields)) return false;
       }
       
-      // Enviar datos usando el servicio
-      const response = await FormSubmissionService.saveIniciativaData(formData);
+      // Preparar payload según el tipo de remitente
+      const entidadId = 1; // Usar el ID de entidad apropiado
       
-      // Manejar la respuesta según el tipo de remitente
-      setApiStatus('¡Datos de la iniciativa guardados correctamente!');
-      console.log('Iniciativa creada:', response);
+      // Inicializar con el tipo explícito
+      const payload: IniciativaPayload = {
+        entidad: entidadId,
+        creado_desde: 'web'
+      };
       
-      if (response && response.id) {
+      if (formData.tipoRemitente === 'persona' && formData.datosPersona) {
+        payload.radicado_por = formData.datosPersona.remitenteId;
+        payload.tipo_proyecto = formData.datosPersona.tipoProyecto || '';
+        payload.titulo = formData.datosPersona.titulo || '';
+        payload.descripcion = formData.datosPersona.descripcion || '';
+        payload.poblacion_beneficiada = formData.datosPersona.poblacionBeneficiada || '';
+        payload.valor_total = formData.datosPersona.valorTotal || '';
+      } else if (formData.tipoRemitente === 'entidad' && formData.datosEntidad) {
+        payload.radicado_por = formData.datosEntidad.remitenteId;
+        payload.tipo_proyecto = formData.datosEntidad.tipoProyecto || '';
+        payload.titulo = formData.datosEntidad.titulo || '';
+        payload.descripcion = formData.datosEntidad.descripcion || '';
+        payload.poblacion_beneficiada = formData.datosEntidad.poblacionBeneficiada || '';
+        payload.valor_total = formData.datosEntidad.valorTotal || '';
+      } else if (formData.tipoRemitente === 'organizacion' && formData.datosOrganizacion) {
+        payload.radicado_por = formData.datosOrganizacion.remitenteId;
+        payload.tipo_proyecto = formData.datosOrganizacion.tipoProyecto || '';
+        payload.titulo = formData.datosOrganizacion.titulo || '';
+        payload.descripcion = formData.datosOrganizacion.descripcion || '';
+        payload.poblacion_beneficiada = formData.datosOrganizacion.poblacionBeneficiada || '';
+        payload.valor_total = formData.datosOrganizacion.valorTotal || '';
+      }
+      
+      // Enviar datos usando el servicio API centralizado
+      const { success, data } = await apiPost(`/api/iniciativas/${entidadId}/`, payload);
+      
+      if (success && data && data.id) {
         if (formData.tipoRemitente === 'persona') {
           updateFormData({
             datosPersona: {
               ...formData.datosPersona,
-              iniciativaId: response.id.toString(),
-              radicado: response.radicado
+              iniciativaId: data.id.toString(),
+              radicado: data.radicado
             }
           });
         } else if (formData.tipoRemitente === 'entidad') {
           updateFormData({
             datosEntidad: {
               ...formData.datosEntidad,
-              iniciativaId: response.id.toString(),
-              radicado: response.radicado
+              iniciativaId: data.id.toString(),
+              radicado: data.radicado
             }
           });
         } else if (formData.tipoRemitente === 'organizacion') {
           updateFormData({
             datosOrganizacion: {
               ...formData.datosOrganizacion,
-              iniciativaId: response.id.toString(),
-              radicado: response.radicado
+              iniciativaId: data.id.toString(),
+              radicado: data.radicado
             }
           });
         }
       }
       
       setSuccess(true);
-      setLoading(false);
-      return true;
+      return success;
     } catch (error) {
-      return handleError(error);
+      console.error('Error al enviar datos de iniciativa:', error);
+      return false;
     }
   };
 
@@ -261,13 +302,13 @@ const StepNavigation: React.FC = () => {
    * @returns Promise<boolean> - True si se guardó correctamente, false en caso contrario
    */
   const saveCurrentStepData = async (): Promise<boolean> => {
-    setLoading(true);
+    clearErrors(); // Limpiar errores previos
     setError(null);
 
     try {
       // Determinar qué guardar según el paso actual
       if (formData.paso === 1) {
-        setApiStatus('Guardando datos del remitente...');
+        // No mostrar mensaje de "Guardando datos del remitente..."
         
         // Manejo según tipo de remitente
         if (formData.tipoRemitente === 'persona') {
@@ -281,15 +322,16 @@ const StepNavigation: React.FC = () => {
         }
       } 
       else if (formData.paso === 2) {
-        setApiStatus('Guardando datos de la iniciativa...');
+        // No mostrar mensaje de "Guardando datos de la iniciativa..."
         return await handleIniciativaData();
       }
       
       // Si no es un paso que requiera guardar datos
-      setLoading(false);
       return true;
     } catch (err: unknown) {
-      return handleError(err);
+      console.error('Error al guardar datos:', err);
+      setError(err instanceof Error ? err.message : 'Error al procesar la solicitud');
+      return false;
     }
   };
 
@@ -318,8 +360,8 @@ const StepNavigation: React.FC = () => {
     // Solo avanzar si la operación de guardado fue exitosa o no era necesaria
     if (saveSuccess) {
       // Limpiamos los mensajes de estado para el siguiente paso
-      setApiStatus('');
       setError(null);
+      clearErrors(); // Limpiar errores del servicio API
       nextStep();
     }
   };
@@ -333,8 +375,8 @@ const StepNavigation: React.FC = () => {
     });
     
     // Limpiar mensajes de estado al regresar
-    setApiStatus('');
     setError(null);
+    clearErrors(); // Limpiar errores del servicio API
     prevStep();
   };
 
@@ -355,7 +397,6 @@ const StepNavigation: React.FC = () => {
     if (saveSuccess) {
       // Aquí puedes implementar la lógica de envío final del formulario
       console.log('Formulario completado:', formData);
-      setApiStatus('¡Formulario enviado con éxito!');
       setSuccess(true);
       
       // Cuando se completa el formulario, se podría mostrar un modal de confirmación
@@ -438,9 +479,12 @@ const StepNavigation: React.FC = () => {
 
   return (
     <div className="flex flex-col mt-6">
-      {/* Componente de mensajes de estado */}
+      {/* Mostrar mensaje de error del servicio API */}
+      <ErrorMessage show={showError} message={errorMessage} />
+      
+      {/* Componente de mensajes de estado (mantenemos para otros mensajes) */}
       <StatusMessage 
-        apiStatus={apiStatus}
+        apiStatus={''} // Ya no necesitamos mostrar "guardando datos..." o "datos guardados"
         error={error}
         onErrorClose={() => setError(null)}
         isSuccess={success}
@@ -452,7 +496,7 @@ const StepNavigation: React.FC = () => {
         currentStep={formData.paso}
         isLastStep={isLastStep()}
         isCurrentStepValid={isCurrentStepValid}
-        loading={loading}
+        loading={isLoading} // Ahora usamos isLoading del servicio API
         onPrevious={handlePrev}
         onNext={handleNext}
         onSubmit={handleSubmit}

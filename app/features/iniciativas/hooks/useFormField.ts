@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, useRef } from 'react';
 import { useFormContext } from '../context/FormContext';
 import { ValidationResult } from '../types/formTypes';
 
@@ -23,7 +23,7 @@ export const useFormField = (
   fieldType: FieldType,
   validationRules?: ValidationRules
 ) => {
-  const { formData, updateFormData, validationState, setValidationState } = useFormContext();
+  const { formData, updateFormData, validationState, setValidationState, registerFieldValidator } = useFormContext();
   
   // Determinar el valor actual del campo según el tipo de remitente
   const getCurrentValue = (): string => {
@@ -45,6 +45,9 @@ export const useFormField = (
     isValid: true,
     message: ''
   });
+  
+  // Añadir estado para controlar cuándo mostrar errores
+  const [showValidationError, setShowValidationError] = useState<boolean>(false);
   
   // Sincronizar el estado local cuando cambia el contexto
   useEffect(() => {
@@ -104,8 +107,10 @@ export const useFormField = (
     const newValue = e.target.value;
     setValue(newValue);
     
-    // Validar el campo
+    // Validar el campo pero no mostrar el error inmediatamente
     const validationResult = validateField(newValue);
+    
+    // Actualizar la validación en el contexto pero no mostrarla visualmente
     setValidation(validationResult);
     
     // Actualizar el estado de validación en el contexto
@@ -178,11 +183,29 @@ export const useFormField = (
     }
   };
   
+  // Función para mostrar los errores de validación
+  const showErrors = () => {
+    setShowValidationError(true);
+  };
+
+  // Registrar la función showErrors en el contexto
+  useEffect(() => {
+    // Verificar si registerFieldValidator es una función
+    if (typeof registerFieldValidator === 'function') {
+      return registerFieldValidator(showErrors);
+    }
+    
+    // Si no es una función, simplemente retorna una función de limpieza vacía
+    return () => {};
+  }, [registerFieldValidator]);
+  
   return {
     value,
     validation,
     handleChange,
-    updateValue
+    updateValue,
+    showErrors,
+    showValidationError
   };
 };
 
