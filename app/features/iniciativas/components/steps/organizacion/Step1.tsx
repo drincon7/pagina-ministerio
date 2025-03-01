@@ -2,13 +2,16 @@
 
 import React, { useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { useFormValidation } from '../../../hooks/useFormValidation';
 import StepNavigation from '../../StepNavigation';
 import type { FormData } from '../../../types/formTypes';
 
 const Step1: React.FC = () => {
-  const { formData, updateFormData } = useFormContext();
-  const { validationState, validateCurrentStep } = useFormValidation();
+  const { 
+    formData, 
+    updateFormData,
+    validationState, 
+    validateCurrentStep
+  } = useFormContext();
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
@@ -64,11 +67,11 @@ const Step1: React.FC = () => {
           value={formData.datosOrganizacion?.nombreOrganizacion ?? ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
-            validationState.nombreOrganizacion?.isValid === false ? 'border-red-500' : ''
+            validationState?.nombreOrganizacion?.isValid === false ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState.nombreOrganizacion?.message && (
+        {validationState?.nombreOrganizacion?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.nombreOrganizacion.message}</p>
         )}
       </div>
@@ -90,12 +93,12 @@ const Step1: React.FC = () => {
             onChange={handleChange}
             placeholder="Número de NIT"
             className={`flex-1 ${inputBaseClass} ${
-              validationState.razonOrganizacion?.isValid === false ? 'border-red-500' : ''
+              validationState?.razonOrganizacion?.isValid === false ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState.razonOrganizacion?.message && (
+        {validationState?.razonOrganizacion?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.razonOrganizacion.message}</p>
         )}
       </div>
@@ -113,11 +116,11 @@ const Step1: React.FC = () => {
           onChange={handleChange}
           placeholder="ejemplo@gmail.com"
           className={`${inputBaseClass} ${
-            validationState.email?.isValid === false ? 'border-red-500' : ''
+            validationState?.email?.isValid === false ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState.email?.message && (
+        {validationState?.email?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
         )}
       </div>
@@ -139,12 +142,12 @@ const Step1: React.FC = () => {
             onChange={handleChange}
             placeholder="Ej: 10090292929"
             className={`flex-1 ${inputBaseClass} ${
-              validationState.numeroContacto?.isValid === false ? 'border-red-500' : ''
+              validationState?.numeroContacto?.isValid === false ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState.numeroContacto?.message && (
+        {validationState?.numeroContacto?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.numeroContacto.message}</p>
         )}
       </div>

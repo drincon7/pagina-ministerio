@@ -2,7 +2,6 @@
 
 import React, { useCallback, useState, useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { useFormValidation } from '../../../hooks/useFormValidation';
 import type { DocumentoMetadata, Documentos } from '../../../types/formTypes';
 import StepNavigation from '../../StepNavigation';
 import api from '@/services/api/config';
@@ -36,8 +35,12 @@ interface DocumentState {
 }
 
 const Step3: React.FC = () => {
-  const { formData, updateFormData } = useFormContext();
-  const { validationState, setValidationState } = useFormValidation();
+  const { 
+    formData, 
+    updateFormData,
+    validationState,
+    setValidationState
+  } = useFormContext();
 
   const [documentosRequeridos, setDocumentosRequeridos] = useState<DocumentState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -195,7 +198,7 @@ const Step3: React.FC = () => {
     const isValid = uploadedObligatorios >= totalObligatorios;
     
     // Actualizar el estado de validación
-    setValidationState((prev: any) => ({
+    setValidationState((prev) => ({
       ...prev,
       documentosObligatorios: {
         isValid,

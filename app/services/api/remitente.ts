@@ -7,7 +7,7 @@ import {
   PersonaData,
   EntidadData,
   OrganizacionData 
-} from '@/services/api/types/remitente';
+} from '@/services/types/remitente';
 
 // Ruta base correcta según urls.py
 const REMITENTE_BASE_PATH = 'mie/api/remitente';

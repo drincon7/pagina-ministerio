@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useFormContext } from '../../../context/FormContext';
-import { useFormValidation } from '../../../hooks/useFormValidation';
 import StepNavigation from '../../StepNavigation';
 
 const Step1: React.FC = () => {
-  const { formData, updateFormData } = useFormContext();
-  const { validationState, validateCurrentStep } = useFormValidation();
+  const { 
+    formData, 
+    updateFormData, 
+    validationState, 
+    validateCurrentStep 
+  } = useFormContext();
 
   // Clases base comunes
   const inputBaseClass = "w-full border border-gray-300 rounded-md p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500";
@@ -50,7 +53,65 @@ const Step1: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4">      
+
+      {/* 🔹 Nombres */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="nombres">
+          Nombre (s) <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="nombres"
+          name="nombres"
+          value={formData.datosPersona?.nombres ?? ''}
+          onChange={handleChange}
+          className={`${inputBaseClass} ${
+            validationState?.nombres?.isValid === false ? 'border-red-500' : ''
+          }`}
+          required
+        />
+        {validationState?.nombres?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.nombres.message}</p>
+        )}
+      </div>
+
+      {/* 🔹 Primer Apellido */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="primerApellido">
+          Primer apellido <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="primerApellido"
+          name="primerApellido"
+          value={formData.datosPersona?.primerApellido ?? ''}
+          onChange={handleChange}
+          className={`${inputBaseClass} ${
+            validationState?.primerApellido?.isValid === false ? 'border-red-500' : ''
+          }`}
+          required
+        />
+        {validationState?.primerApellido?.message && (
+          <p className="text-red-500 text-sm mt-1">{validationState.primerApellido.message}</p>
+        )}
+      </div>
+
+      {/* 🔹 Segundo Apellido */}
+      <div className="mb-4">
+        <label className={labelBaseClass} htmlFor="segundoApellido">
+          Segundo apellido
+        </label>
+        <input
+          type="text"
+          id="segundoApellido"
+          name="segundoApellido"
+          value={formData.datosPersona?.segundoApellido ?? ''}
+          onChange={handleChange}
+          className={inputBaseClass}
+        />
+      </div>
+
       {/* 🔹 Número de Documento */}
       <div className="mb-4">
         <label className={labelBaseClass} htmlFor="numeroDocumento">
@@ -74,71 +135,14 @@ const Step1: React.FC = () => {
             value={formData.datosPersona?.numeroDocumento ?? ''}
             onChange={handleChange}
             className={`flex-1 ${inputBaseClass} ${
-              validationState.numeroDocumento?.isValid === false ? 'border-red-500' : ''
+              validationState?.numeroDocumento?.isValid === false ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState.numeroDocumento?.message && (
+        {validationState?.numeroDocumento?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.numeroDocumento.message}</p>
         )}
-      </div>
-
-      {/* 🔹 Nombres */}
-      <div className="mb-4">
-        <label className={labelBaseClass} htmlFor="nombres">
-          Nombre (s) <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="nombres"
-          name="nombres"
-          value={formData.datosPersona?.nombres ?? ''}
-          onChange={handleChange}
-          className={`${inputBaseClass} ${
-            validationState.nombres?.isValid === false ? 'border-red-500' : ''
-          }`}
-          required
-        />
-        {validationState.nombres?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.nombres.message}</p>
-        )}
-      </div>
-
-      {/* 🔹 Primer Apellido */}
-      <div className="mb-4">
-        <label className={labelBaseClass} htmlFor="primerApellido">
-          Primer apellido <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="primerApellido"
-          name="primerApellido"
-          value={formData.datosPersona?.primerApellido ?? ''}
-          onChange={handleChange}
-          className={`${inputBaseClass} ${
-            validationState.primerApellido?.isValid === false ? 'border-red-500' : ''
-          }`}
-          required
-        />
-        {validationState.primerApellido?.message && (
-          <p className="text-red-500 text-sm mt-1">{validationState.primerApellido.message}</p>
-        )}
-      </div>
-
-      {/* 🔹 Segundo Apellido */}
-      <div className="mb-4">
-        <label className={labelBaseClass} htmlFor="segundoApellido">
-          Segundo apellido
-        </label>
-        <input
-          type="text"
-          id="segundoApellido"
-          name="segundoApellido"
-          value={formData.datosPersona?.segundoApellido ?? ''}
-          onChange={handleChange}
-          className={inputBaseClass}
-        />
       </div>
 
       {/* 🔹 Email */}
@@ -153,11 +157,11 @@ const Step1: React.FC = () => {
           value={formData.datosPersona?.email ?? ''}
           onChange={handleChange}
           className={`${inputBaseClass} ${
-            validationState.email?.isValid === false ? 'border-red-500' : ''
+            validationState?.email?.isValid === false ? 'border-red-500' : ''
           }`}
           required
         />
-        {validationState.email?.message && (
+        {validationState?.email?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.email.message}</p>
         )}
       </div>
@@ -178,12 +182,12 @@ const Step1: React.FC = () => {
             value={formData.datosPersona?.numeroContacto ?? ''}
             onChange={handleChange}
             className={`flex-1 ${inputBaseClass} ${
-              validationState.numeroContacto?.isValid === false ? 'border-red-500' : ''
+              validationState?.numeroContacto?.isValid === false ? 'border-red-500' : ''
             }`}
             required
           />
         </div>
-        {validationState.numeroContacto?.message && (
+        {validationState?.numeroContacto?.message && (
           <p className="text-red-500 text-sm mt-1">{validationState.numeroContacto.message}</p>
         )}
       </div>

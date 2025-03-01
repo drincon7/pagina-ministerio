@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../context/FormContext';
-import { RemitenteAPI } from '@/services/api/remitente';
-import { IniciativaAPI } from '@/services/api/iniciativa';
-import { useFormStorage } from '../hooks/useFormStorage';
+import StatusMessage from '@/components/StatusMessage';
+import NavigationButtons from '@/components/NavigationButtons';
+import FormSubmissionService from '@/services/formSubmissionService';
 
 /**
  * Componente de navegación entre pasos del formulario
@@ -34,6 +34,29 @@ const StepNavigation: React.FC = () => {
     console.log('Tipo de Remitente:', formData.tipoRemitente);
     console.log('Validation State:', validationState);
   }, [formData.paso, isCurrentStepValid, formData.tipoRemitente, validationState]);
+
+  /**
+   * Maneja los errores de las peticiones API
+   * @param err Error capturado
+   * @returns boolean - Siempre devuelve false en caso de error
+   */
+  const handleError = (err: unknown): boolean => {
+    console.error('Error al enviar datos:', err);
+    
+    // Utilizamos type narrowing para manejar diferentes tipos de errores
+    if (err && typeof err === 'object' && 'response' in err) {
+      const apiError = err as { response?: { data?: { message?: string } } };
+      setError(apiError.response?.data?.message || 'Error al enviar los datos');
+    } else if (err instanceof Error) {
+      setError(err.message || 'Error al procesar la solicitud');
+    } else {
+      setError('Error al procesar la solicitud');
+    }
+    
+    setApiStatus('Error al procesar la solicitud');
+    setLoading(false);
+    return false;
+  };
 
   /**
    * Comprueba si los campos requeridos están presentes y son válidos
@@ -67,39 +90,104 @@ const StepNavigation: React.FC = () => {
   };
 
   /**
-   * Guarda los datos del paso actual en la API
-   * @returns Promise<boolean> - True si se guardó correctamente, false en caso contrario
+   * Maneja el envío de datos de persona
    */
-  const saveCurrentStepData = async (): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+  const handlePersonaData = async (): Promise<boolean> => {
+    // Verificar si todos los campos requeridos son válidos
+    const requiredFields = ['nombres', 'primerApellido', 'numeroDocumento', 'email', 'numeroContacto'];
+    if (!validateRequiredFields(requiredFields)) {
+      return false;
+    }
 
     try {
-      // Determinar qué guardar según el paso actual
-      if (formData.paso === 1) {
-        setApiStatus('Guardando datos del remitente...');
-        
-        // Manejo según tipo de remitente
-        if (formData.tipoRemitente === 'persona') {
-          return await handlePersonaData();
-        } 
-        else if (formData.tipoRemitente === 'entidad') {
-          return await handleEntidadData();
-        } 
-        else if (formData.tipoRemitente === 'organizacion') {
-          return await handleOrganizacionData();
-        }
-      } 
-      else if (formData.paso === 2) {
-        setApiStatus('Guardando datos de la iniciativa...');
-        return await handleIniciativaData();
+      // Usar el servicio para manejar la llamada a la API
+      const response = await FormSubmissionService.savePersonaData(formData);
+      
+      setApiStatus('¡Datos guardados correctamente!');
+      console.log('Datos de persona enviados:', response);
+      
+      // Guardar el ID del remitente para referencia si es necesario
+      if (response && response.data && response.data.id && !formData.datosPersona?.remitenteId) {
+        updateFormData({
+          datosPersona: {
+            ...formData.datosPersona,
+            remitenteId: response.data.id.toString()
+          }
+        });
       }
       
-      // Si no es un paso que requiera guardar datos
       setLoading(false);
       return true;
-    } catch (err: unknown) {
-      return handleError(err);
+    } catch (error) {
+      return handleError(error);
+    }
+  };
+
+  /**
+   * Maneja el envío de datos de entidad
+   */
+  const handleEntidadData = async (): Promise<boolean> => {
+    // Verificar si todos los campos requeridos son válidos
+    const requiredFields = ['nombre', 'nit', 'email', 'telefono'];
+    if (!validateRequiredFields(requiredFields)) {
+      return false;
+    }
+
+    try {
+      // Usar el servicio para manejar la llamada a la API
+      const response = await FormSubmissionService.saveEntidadData(formData);
+      
+      setApiStatus('¡Datos guardados correctamente!');
+      console.log('Datos de entidad enviados:', response);
+      
+      // Guardar el ID del remitente para referencia si es necesario
+      if (response && response.data && response.data.id && !formData.datosEntidad?.remitenteId) {
+        updateFormData({
+          datosEntidad: {
+            ...formData.datosEntidad,
+            remitenteId: response.data.id.toString()
+          }
+        });
+      }
+      
+      setLoading(false);
+      return true;
+    } catch (error) {
+      return handleError(error);
+    }
+  };
+
+  /**
+   * Maneja el envío de datos de organización
+   */
+  const handleOrganizacionData = async (): Promise<boolean> => {
+    // Verificar si todos los campos requeridos son válidos
+    const requiredFields = ['nombreOrganizacion', 'razonOrganizacion', 'email', 'numeroContacto'];
+    if (!validateRequiredFields(requiredFields)) {
+      return false;
+    }
+
+    try {
+      // Usar el servicio para manejar la llamada a la API
+      const response = await FormSubmissionService.saveOrganizacionData(formData);
+      
+      setApiStatus('¡Datos guardados correctamente!');
+      console.log('Datos de organización enviados:', response);
+      
+      // Guardar el ID del remitente para referencia si es necesario
+      if (response && response.data && response.data.id && !formData.datosOrganizacion?.remitenteId) {
+        updateFormData({
+          datosOrganizacion: {
+            ...formData.datosOrganizacion,
+            remitenteId: response.data.id.toString()
+          }
+        });
+      }
+      
+      setLoading(false);
+      return true;
+    } catch (error) {
+      return handleError(error);
     }
   };
 
@@ -108,93 +196,25 @@ const StepNavigation: React.FC = () => {
    */
   const handleIniciativaData = async (): Promise<boolean> => {
     try {
-      // Determinar tipo de remitente y preparar datos para API
-      let iniciativaData;
-      let remitenteId;
-      
       // Validar campos según tipo de remitente
       if (formData.tipoRemitente === 'persona') {
         // Verificar campos requeridos para persona
         const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
         if (!validateRequiredFields(requiredFields)) return false;
-        
-        remitenteId = formData.datosPersona?.remitenteId;
-        if (!remitenteId) {
-          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
-          setLoading(false);
-          return false;
-        }
-        
-        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
-        iniciativaData = {
-          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
-          radicado_por: parseInt(remitenteId),
-          tipo_proyecto: formData.datosPersona?.tipoProyecto || '',
-          titulo: formData.datosPersona?.titulo || '',
-          descripcion: formData.datosPersona?.descripcion || '',
-          poblacion_beneficiada: formData.datosPersona?.poblacionBeneficiada || '',
-          valor_total: formData.datosPersona?.valorTotal || '',
-          creado_desde: 'persona',
-          radicado: null // Enviar null para que el backend genere automáticamente
-        };
       } 
       else if (formData.tipoRemitente === 'entidad') {
         // Verificar campos requeridos para entidad
         const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
         if (!validateRequiredFields(requiredFields)) return false;
-        
-        remitenteId = formData.datosEntidad?.remitenteId;
-        if (!remitenteId) {
-          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
-          setLoading(false);
-          return false;
-        }
-        
-        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
-        iniciativaData = {
-          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
-          radicado_por: parseInt(remitenteId),
-          tipo_proyecto: formData.datosEntidad?.tipoProyecto || '',
-          titulo: formData.datosEntidad?.titulo || '',
-          descripcion: formData.datosEntidad?.descripcion || '',
-          poblacion_beneficiada: formData.datosEntidad?.poblacionBeneficiada || '',
-          valor_total: formData.datosEntidad?.valorTotal || '',
-          creado_desde: 'entidad',
-          radicado: null // Enviar null para que el backend genere automáticamente
-        };
       }
       else if (formData.tipoRemitente === 'organizacion') {
         // Verificar campos requeridos para organización
         const requiredFields = ['tipoProyecto', 'titulo', 'descripcion', 'poblacionBeneficiada', 'valorTotal'];
         if (!validateRequiredFields(requiredFields)) return false;
-        
-        remitenteId = formData.datosOrganizacion?.remitenteId;
-        if (!remitenteId) {
-          setError('Error: No se encontró el ID del remitente. Por favor complete el paso 1.');
-          setLoading(false);
-          return false;
-        }
-        
-        // Preparar datos para la API conforme a la interfaz IniciativaCreateDTO
-        iniciativaData = {
-          entidad: parseInt(process.env.NEXT_PUBLIC_ENTIDAD_ID || '1'),
-          radicado_por: parseInt(remitenteId),
-          tipo_proyecto: formData.datosOrganizacion?.tipoProyecto || '',
-          titulo: formData.datosOrganizacion?.titulo || '',
-          descripcion: formData.datosOrganizacion?.descripcion || '',
-          poblacion_beneficiada: formData.datosOrganizacion?.poblacionBeneficiada || '',
-          valor_total: formData.datosOrganizacion?.valorTotal || '',
-          creado_desde: 'organizacion',
-          radicado: null // Enviar null para que el backend genere automáticamente
-        };
-      } else {
-        setError('Tipo de remitente no válido');
-        setLoading(false);
-        return false;
       }
       
-      // Enviar datos al API
-      const response = await IniciativaAPI.create(iniciativaData);
+      // Enviar datos usando el servicio
+      const response = await FormSubmissionService.saveIniciativaData(formData);
       
       // Manejar la respuesta según el tipo de remitente
       setApiStatus('¡Datos de la iniciativa guardados correctamente!');
@@ -237,158 +257,40 @@ const StepNavigation: React.FC = () => {
   };
 
   /**
-   * Maneja el envío de datos de persona
+   * Guarda los datos del paso actual en la API
+   * @returns Promise<boolean> - True si se guardó correctamente, false en caso contrario
    */
-  const handlePersonaData = async (): Promise<boolean> => {
-    // Verificar si todos los campos requeridos son válidos
-    const requiredFields = ['nombres', 'primerApellido', 'numeroDocumento', 'email', 'numeroContacto'];
-    if (!validateRequiredFields(requiredFields)) {
-      return false;
-    }
-
-    // Preparar datos de persona
-    const personaData = {
-      tipoDocumento: formData.datosPersona?.tipoDocumento || 'CC',
-      numeroDocumento: formData.datosPersona?.numeroDocumento || '',
-      nombres: formData.datosPersona?.nombres || '',
-      primerApellido: formData.datosPersona?.primerApellido || '',
-      segundoApellido: formData.datosPersona?.segundoApellido,
-      email: formData.datosPersona?.email || '',
-      numeroContacto: formData.datosPersona?.numeroContacto || '',
-      remitenteId: formData.datosPersona?.remitenteId || null
-    };
+  const saveCurrentStepData = async (): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
 
     try {
-      // Enviar datos al API - el backend determina si crear o actualizar
-      const response = await RemitenteAPI.saveStep1Data(personaData);
-      
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de persona enviados:', response);
-      
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosPersona?.remitenteId) {
-        updateFormData({
-          datosPersona: {
-            ...formData.datosPersona,
-            remitenteId: response.data.id.toString()
-          }
-        });
+      // Determinar qué guardar según el paso actual
+      if (formData.paso === 1) {
+        setApiStatus('Guardando datos del remitente...');
+        
+        // Manejo según tipo de remitente
+        if (formData.tipoRemitente === 'persona') {
+          return await handlePersonaData();
+        } 
+        else if (formData.tipoRemitente === 'entidad') {
+          return await handleEntidadData();
+        } 
+        else if (formData.tipoRemitente === 'organizacion') {
+          return await handleOrganizacionData();
+        }
+      } 
+      else if (formData.paso === 2) {
+        setApiStatus('Guardando datos de la iniciativa...');
+        return await handleIniciativaData();
       }
       
+      // Si no es un paso que requiera guardar datos
       setLoading(false);
       return true;
-    } catch (error) {
-      return handleError(error);
+    } catch (err: unknown) {
+      return handleError(err);
     }
-  };
-
-  /**
-   * Maneja el envío de datos de entidad
-   */
-  const handleEntidadData = async (): Promise<boolean> => {
-    // Verificar si todos los campos requeridos son válidos
-    const requiredFields = ['nombre', 'nit', 'email', 'telefono'];
-    if (!validateRequiredFields(requiredFields)) {
-      return false;
-    }
-
-    // Preparar datos de entidad
-    const entidadData = {
-      nombre: formData.datosEntidad?.nombre || '',
-      nit: formData.datosEntidad?.nit || '',
-      email: formData.datosEntidad?.email || '',
-      telefono: formData.datosEntidad?.telefono || '',
-      remitenteId: formData.datosEntidad?.remitenteId || null
-    };
-
-    try {
-      // Enviar datos al API - el backend determina si crear o actualizar
-      const response = await RemitenteAPI.saveEntidadData(entidadData);
-      
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de entidad enviados:', response);
-      
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosEntidad?.remitenteId) {
-        updateFormData({
-          datosEntidad: {
-            ...formData.datosEntidad,
-            remitenteId: response.data.id.toString()
-          }
-        });
-      }
-      
-      setLoading(false);
-      return true;
-    } catch (error) {
-      return handleError(error);
-    }
-  };
-
-  /**
-   * Maneja el envío de datos de organización
-   */
-  const handleOrganizacionData = async (): Promise<boolean> => {
-    // Verificar si todos los campos requeridos son válidos
-    const requiredFields = ['nombreOrganizacion', 'razonOrganizacion', 'email', 'numeroContacto'];
-    if (!validateRequiredFields(requiredFields)) {
-      return false;
-    }
-
-    // Preparar datos de organización
-    const organizacionData = {
-      nombreOrganizacion: formData.datosOrganizacion?.nombreOrganizacion || '',
-      razonOrganizacion: formData.datosOrganizacion?.razonOrganizacion || '',
-      email: formData.datosOrganizacion?.email || '',
-      numeroContacto: formData.datosOrganizacion?.numeroContacto || '',
-      remitenteId: formData.datosOrganizacion?.remitenteId || null
-    };
-
-    try {
-      // Enviar datos al API - el backend determina si crear o actualizar
-      const response = await RemitenteAPI.saveOrganizacionData(organizacionData);
-      
-      setApiStatus('¡Datos guardados correctamente!');
-      console.log('Datos de organización enviados:', response);
-      
-      // Guardar el ID del remitente para referencia si es necesario
-      if (response && response.data && response.data.id && !formData.datosOrganizacion?.remitenteId) {
-        updateFormData({
-          datosOrganizacion: {
-            ...formData.datosOrganizacion,
-            remitenteId: response.data.id.toString()
-          }
-        });
-      }
-      
-      setLoading(false);
-      return true;
-    } catch (error) {
-      return handleError(error);
-    }
-  };
-
-  /**
-   * Maneja los errores de las peticiones API
-   * @param err Error capturado
-   * @returns boolean - Siempre devuelve false en caso de error
-   */
-  const handleError = (err: unknown): boolean => {
-    console.error('Error al enviar datos:', err);
-    
-    // Utilizamos type narrowing para manejar diferentes tipos de errores
-    if (err && typeof err === 'object' && 'response' in err) {
-      const apiError = err as { response?: { data?: { message?: string } } };
-      setError(apiError.response?.data?.message || 'Error al enviar los datos');
-    } else if (err instanceof Error) {
-      setError(err.message || 'Error al procesar la solicitud');
-    } else {
-      setError('Error al procesar la solicitud');
-    }
-    
-    setApiStatus('Error al procesar la solicitud');
-    setLoading(false);
-    return false;
   };
 
   /**
@@ -503,7 +405,7 @@ const StepNavigation: React.FC = () => {
       }, 500);
     }
   };
-
+  
   /**
    * Determina si estamos en el último paso del formulario
    * @returns boolean - True si estamos en el último paso
@@ -519,88 +421,42 @@ const StepNavigation: React.FC = () => {
         return false;
     }
   };
+  
+  // Determinar el número de radicado según el tipo de remitente
+  const getCurrentRadicado = () => {
+    if (formData.tipoRemitente === 'persona' && formData.datosPersona?.radicado) {
+      return formData.datosPersona.radicado;
+    } 
+    if (formData.tipoRemitente === 'entidad' && formData.datosEntidad?.radicado) {
+      return formData.datosEntidad.radicado;
+    }
+    if (formData.tipoRemitente === 'organizacion' && formData.datosOrganizacion?.radicado) {
+      return formData.datosOrganizacion.radicado;
+    }
+    return undefined;
+  };
 
   return (
     <div className="flex flex-col mt-6">
-      {/* Mostrar mensajes de estado y errores */}
-      {apiStatus && (
-        <div className={`p-4 rounded-md mb-4 ${error ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-          <p className="font-mono text-sm">{apiStatus}</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-md mb-4">
-          <p>{error}</p>
-          <button 
-            onClick={() => setError(null)}
-            className="text-sm underline mt-2"
-          >
-            Cerrar
-          </button>
-        </div>
-      )}
-
-      {/* Mensaje de éxito cuando se completa el formulario */}
-      {success && (
-        <div className="p-4 bg-green-100 text-green-800 rounded-md mb-4">
-          <p className="font-bold text-lg">¡Iniciativa registrada con éxito!</p>
-          {formData.tipoRemitente === 'persona' && formData.datosPersona?.radicado && (
-            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosPersona.radicado}</span></p>
-          )}
-          {formData.tipoRemitente === 'entidad' && formData.datosEntidad?.radicado && (
-            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosEntidad.radicado}</span></p>
-          )}
-          {formData.tipoRemitente === 'organizacion' && formData.datosOrganizacion?.radicado && (
-            <p className="mt-2">Número de radicado: <span className="font-mono font-semibold">{formData.datosOrganizacion.radicado}</span></p>
-          )}
-          <p className="mt-1 text-sm">Por favor guarde este número para futuras consultas.</p>
-        </div>
-      )}
+      {/* Componente de mensajes de estado */}
+      <StatusMessage 
+        apiStatus={apiStatus}
+        error={error}
+        onErrorClose={() => setError(null)}
+        isSuccess={success}
+        radicado={getCurrentRadicado()}
+      />
 
       {/* Botones de navegación */}
-      <div className="flex justify-between">
-        {formData.paso > 1 && (
-          <button
-            onClick={handlePrev}
-            className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-400 transition-colors"
-            disabled={loading}
-            aria-label="Volver al paso anterior"
-          >
-            Volver
-          </button>
-        )}
-        
-        {!isLastStep() ? (
-          <button
-            onClick={handleNext}
-            disabled={!isCurrentStepValid || loading}
-            className={`px-6 py-2 rounded-md ml-auto transition-colors ${
-              isCurrentStepValid && !loading
-                ? "bg-pink-500 text-white hover:bg-pink-600" 
-                : "bg-pink-300 text-white cursor-not-allowed"
-            }`}
-            aria-label="Continuar al siguiente paso"
-            type="button"
-          >
-            {loading ? "Procesando..." : "Siguiente"}
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={!isCurrentStepValid || loading}
-            className={`px-6 py-2 rounded-md ml-auto transition-colors ${
-              isCurrentStepValid && !loading
-                ? "bg-pink-500 text-white hover:bg-pink-600" 
-                : "bg-pink-300 text-white cursor-not-allowed"
-            }`}
-            aria-label="Finalizar el formulario"
-            type="button"
-          >
-            {loading ? "Procesando..." : "Finalizar y enviar"}
-          </button>
-        )}
-      </div>
+      <NavigationButtons 
+        currentStep={formData.paso}
+        isLastStep={isLastStep()}
+        isCurrentStepValid={isCurrentStepValid}
+        loading={loading}
+        onPrevious={handlePrev}
+        onNext={handleNext}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };
